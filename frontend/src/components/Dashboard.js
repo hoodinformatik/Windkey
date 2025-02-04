@@ -23,7 +23,8 @@ import {
   alpha,
   Slider,
   FormControlLabel,
-  Checkbox
+  Checkbox,
+  LinearProgress
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -265,6 +266,54 @@ export default function Dashboard() {
     </Box>
   );
 
+  const calculatePasswordStrength = (password) => {
+    if (!password) return { score: 0, label: 'Kein Passwort', color: 'error' };
+    
+    let score = 0;
+    const checks = {
+      length: password.length >= 12,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      numbers: /[0-9]/.test(password),
+      special: /[^A-Za-z0-9]/.test(password),
+      length_bonus: password.length >= 16
+    };
+    
+    // Grundlegende Checks
+    if (checks.length) score += 20;
+    if (checks.uppercase) score += 20;
+    if (checks.lowercase) score += 20;
+    if (checks.numbers) score += 20;
+    if (checks.special) score += 20;
+    
+    // Bonus für extra Länge
+    if (checks.length_bonus) score += 20;
+    
+    // Maximaler Score ist 100
+    score = Math.min(score, 100);
+    
+    // Label und Farbe basierend auf Score
+    let label, color;
+    if (score < 20) {
+      label = 'Sehr schwach';
+      color = 'error';
+    } else if (score < 40) {
+      label = 'Schwach';
+      color = 'error';
+    } else if (score < 60) {
+      label = 'Mittel';
+      color = 'warning';
+    } else if (score < 80) {
+      label = 'Stark';
+      color = 'info';
+    } else {
+      label = 'Sehr stark';
+      color = 'success';
+    }
+    
+    return { score, label, color };
+  };
+
   return (
     <Box>
       <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -464,6 +513,35 @@ export default function Dashboard() {
               }}
               sx={{ mb: 2 }}
             />
+            
+            {/* Passwort-Stärke Anzeige */}
+            {formData.password && (
+              <Box sx={{ mt: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={calculatePasswordStrength(formData.password).score} 
+                    color={calculatePasswordStrength(formData.password).color}
+                    sx={{ 
+                      flexGrow: 1,
+                      height: 8,
+                      borderRadius: 4
+                    }}
+                  />
+                  <Typography 
+                    variant="caption" 
+                    color={calculatePasswordStrength(formData.password).color}
+                    sx={{ ml: 1, minWidth: 80 }}
+                  >
+                    {calculatePasswordStrength(formData.password).label}
+                  </Typography>
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  Empfehlung: Mindestens 12 Zeichen mit Groß- und Kleinbuchstaben, Zahlen und Sonderzeichen
+                </Typography>
+              </Box>
+            )}
+            
             <TextField
               margin="normal"
               fullWidth
