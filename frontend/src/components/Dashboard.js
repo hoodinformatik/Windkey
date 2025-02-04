@@ -366,7 +366,10 @@ export default function Dashboard() {
       )}
 
       {showStats ? (
-        <Stats passwords={passwords} />
+        <Stats 
+          passwords={passwords} 
+          showSnackbar={(message, severity) => setSnackbar({ open: true, message, severity })}
+        />
       ) : (
         <Grid container spacing={3}>
           {filteredPasswords.map((password) => (

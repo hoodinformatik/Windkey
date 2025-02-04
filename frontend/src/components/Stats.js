@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Paper,
@@ -8,6 +8,12 @@ import {
   Card,
   CardContent,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  IconButton,
 } from '@mui/material';
 import {
   Security as SecurityIcon,
@@ -15,9 +21,10 @@ import {
   Error as ErrorIcon,
   CheckCircle as CheckCircleIcon,
   Info as InfoIcon,
+  ContentCopy as ContentCopyIcon
 } from '@mui/icons-material';
 
-const Stats = ({ passwords }) => {
+const Stats = ({ passwords, showSnackbar }) => {
   const calculatePasswordStrength = (password) => {
     if (!password) return { score: 0, label: 'Kein Passwort', color: 'error' };
     
@@ -92,6 +99,21 @@ const Stats = ({ passwords }) => {
 
   const stats = getPasswordStats();
 
+  const [openDuplicatesDialog, setOpenDuplicatesDialog] = useState(false);
+  
+  const getDuplicateGroups = () => {
+    const groups = {};
+    passwords.forEach(p => {
+      if (!groups[p.password]) {
+        groups[p.password] = [];
+      }
+      groups[p.password].push(p);
+    });
+    return Object.values(groups).filter(group => group.length > 1);
+  };
+
+  const duplicateGroups = getDuplicateGroups();
+
   const StatCard = ({ title, value, icon, color, tooltip }) => (
     <Tooltip title={tooltip}>
       <Card sx={{ height: '100%' }}>
@@ -135,21 +157,42 @@ const Stats = ({ passwords }) => {
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
+          <Card 
+            sx={{ 
+              height: '100%', 
+              cursor: stats.duplicates > 0 ? 'pointer' : 'default',
+              '&:hover': stats.duplicates > 0 ? {
+                transform: 'scale(1.02)',
+                transition: 'transform 0.2s'
+              } : {}
+            }}
+            onClick={() => stats.duplicates > 0 && setOpenDuplicatesDialog(true)}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <WarningIcon color="warning" />
+                <Typography variant="h6" sx={{ ml: 1 }}>
+                  Duplikate
+                </Typography>
+              </Box>
+              <Typography variant="h4" color="warning.main">
+                {stats.duplicates}
+              </Typography>
+              {stats.duplicates > 0 && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                  Klicken für Details
+                </Typography>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Gesamt"
             value={stats.total}
             icon={<SecurityIcon color="primary" />}
             color="primary"
             tooltip="Gesamtzahl der gespeicherten Passwörter"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Duplikate"
-            value={stats.duplicates}
-            icon={<WarningIcon color="warning" />}
-            color="warning"
-            tooltip="Anzahl der Passwörter, die mehrfach verwendet werden"
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -207,6 +250,73 @@ const Stats = ({ passwords }) => {
           color="error"
         />
       </Paper>
+
+      {/* Dialog für Duplikate */}
+      <Dialog
+        open={openDuplicatesDialog}
+        onClose={() => setOpenDuplicatesDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <WarningIcon color="warning" sx={{ mr: 1 }} />
+            Gefundene Duplikate
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {duplicateGroups.map((group, index) => (
+            <Box key={index} sx={{ mb: 3 }}>
+              <Typography variant="subtitle1" color="warning.main" sx={{ mb: 1 }}>
+                Gruppe {index + 1} ({group.length} Einträge)
+              </Typography>
+              <Paper variant="outlined" sx={{ p: 2 }}>
+                {group.map((item, i) => (
+                  <Box 
+                    key={i} 
+                    sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      mb: i < group.length - 1 ? 1 : 0,
+                      pb: i < group.length - 1 ? 1 : 0,
+                      borderBottom: i < group.length - 1 ? '1px solid' : 'none',
+                      borderColor: 'divider'
+                    }}
+                  >
+                    <Box>
+                      <Typography variant="body1">{item.title}</Typography>
+                      {item.url && (
+                        <Typography variant="caption" color="text.secondary">
+                          {item.url}
+                        </Typography>
+                      )}
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Tooltip title="Passwort kopieren">
+                        <IconButton 
+                          size="small"
+                          onClick={() => {
+                            navigator.clipboard.writeText(item.password);
+                            showSnackbar('Passwort wurde kopiert', 'success');
+                          }}
+                        >
+                          <ContentCopyIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  </Box>
+                ))}
+              </Paper>
+            </Box>
+          ))}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDuplicatesDialog(false)}>
+            Schließen
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
