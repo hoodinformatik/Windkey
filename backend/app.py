@@ -1,65 +1,86 @@
-from flask import Flask, request, jsonify
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import LoginManager
+from flask_cors import CORS
 from datetime import datetime
 import os
 from dotenv import load_dotenv
-import pyotp
-from cryptography.fernet import Fernet
-from flask_cors import CORS
 
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///passwords.db')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///windkey.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# CORS konfigurieren
+CORS(app, supports_credentials=True, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:3000"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type"],
+        "expose_headers": ["Content-Range", "X-Content-Range"],
+        "supports_credentials": True
+    }
+})
 
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
+login_manager.session_protection = "strong"
 
-# Verschlüsselungsschlüssel generieren
-def generate_key():
-    return Fernet.generate_key()
-
-# Modelle
-class User(UserMixin, db.Model):
+class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(200), nullable=False)
+    password_hash = db.Column(db.String(128))
     two_factor_secret = db.Column(db.String(32))
-    passwords = db.relationship('Password', backref='user', lazy=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def set_password(self, password):
+        from werkzeug.security import generate_password_hash
         self.password_hash = generate_password_hash(password)
     
     def check_password(self, password):
+        from werkzeug.security import check_password_hash
         return check_password_hash(self.password_hash, password)
-    
+        
     def generate_2fa_secret(self):
+        import pyotp
         self.two_factor_secret = pyotp.random_base32()
-        return self.two_factor_secret
+    
+    def get_id(self):
+        return str(self.id)
+    
+    @property
+    def is_active(self):
+        return True
+    
+    @property
+    def is_authenticated(self):
+        return True
+    
+    @property
+    def is_anonymous(self):
+        return False
 
 class Password(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     title = db.Column(db.String(100), nullable=False)
-    encrypted_password = db.Column(db.Text, nullable=False)
+    encrypted_password = db.Column(db.LargeBinary, nullable=False)
+    url = db.Column(db.String(500))
     notes = db.Column(db.Text)
-    url = db.Column(db.String(200))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Routen für die API werden hier implementiert
+with app.app_context():
+    db.create_all()
+
+from routes import *
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
