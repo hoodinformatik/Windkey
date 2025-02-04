@@ -37,9 +37,11 @@ import {
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
   Key as KeyIcon,
-  Refresh
+  Refresh,
+  Assessment as AssessmentIcon
 } from '@mui/icons-material';
 import axios from 'axios';
+import Stats from './Stats';
 
 export default function Dashboard() {
   const [passwords, setPasswords] = useState([]);
@@ -66,6 +68,7 @@ export default function Dashboard() {
     numbers: true,
     special: true
   });
+  const [showStats, setShowStats] = useState(false);
 
   useEffect(() => {
     fetchPasswords();
@@ -317,6 +320,29 @@ export default function Dashboard() {
   return (
     <Box>
       <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Typography variant="h4" component="h1" sx={{ flexGrow: 1 }}>
+          Passwörter
+        </Typography>
+        <Button
+          variant="outlined"
+          onClick={() => setShowStats(!showStats)}
+          startIcon={<AssessmentIcon />}
+          sx={{ mr: 1 }}
+        >
+          {showStats ? 'Passwörter anzeigen' : 'Statistiken anzeigen'}
+        </Button>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => handleOpen()}
+          sx={{ minWidth: 200 }}
+        >
+          Neues Passwort
+        </Button>
+      </Box>
+
+      {/* Suche und Filter */}
+      {!showStats && (
         <TextField
           fullWidth
           placeholder="Passwörter durchsuchen..."
@@ -334,133 +360,130 @@ export default function Dashboard() {
             '& .MuiOutlinedInput-root': {
               backgroundColor: 'background.paper',
             },
+            mb: 4
           }}
         />
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpen()}
-          sx={{ minWidth: 200 }}
-        >
-          Neues Passwort
-        </Button>
-      </Box>
+      )}
 
-      <Grid container spacing={3}>
-        {filteredPasswords.map((password) => (
-          <Grid item xs={12} sm={6} md={4} key={password.id}>
-            <Card 
-              elevation={0}
-              sx={{
-                height: '100%',
-                backgroundColor: (theme) => alpha(theme.palette.background.paper, 0.8),
-                backdropFilter: 'blur(10px)',
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 2,
-                transition: 'transform 0.2s',
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                },
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <SecurityIcon 
-                    sx={{ 
-                      color: 'primary.main',
-                      mr: 1,
-                      fontSize: 28,
-                    }} 
-                  />
-                  <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                    {password.title}
-                  </Typography>
-                  <IconButton 
-                    size="small" 
-                    onClick={() => handleOpen(password)}
-                    sx={{ 
-                      backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
-                      mr: 1,
-                      '&:hover': {
-                        backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.2),
-                      },
-                    }}
-                  >
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton 
-                    size="small" 
-                    onClick={() => handleDelete(password.id)}
-                    sx={{ 
-                      backgroundColor: (theme) => alpha(theme.palette.error.main, 0.1),
-                      '&:hover': {
-                        backgroundColor: (theme) => alpha(theme.palette.error.main, 0.2),
-                      },
-                    }}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-
-                {password.url && (
+      {showStats ? (
+        <Stats passwords={passwords} />
+      ) : (
+        <Grid container spacing={3}>
+          {filteredPasswords.map((password) => (
+            <Grid item xs={12} sm={6} md={4} key={password.id}>
+              <Card 
+                elevation={0}
+                sx={{
+                  height: '100%',
+                  backgroundColor: (theme) => alpha(theme.palette.background.paper, 0.8),
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                  transition: 'transform 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                  },
+                }}
+              >
+                <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <LinkIcon sx={{ color: 'text.secondary', mr: 1, fontSize: 20 }} />
-                    <Typography 
-                      variant="body2" 
-                      color="text.secondary"
+                    <SecurityIcon 
                       sx={{ 
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
+                        color: 'primary.main',
+                        mr: 1,
+                        fontSize: 28,
+                      }} 
+                    />
+                    <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                      {password.title}
+                    </Typography>
+                    <IconButton 
+                      size="small" 
+                      onClick={() => handleOpen(password)}
+                      sx={{ 
+                        backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                        mr: 1,
+                        '&:hover': {
+                          backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.2),
+                        },
                       }}
                     >
-                      {password.url}
-                    </Typography>
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton 
+                      size="small" 
+                      onClick={() => handleDelete(password.id)}
+                      sx={{ 
+                        backgroundColor: (theme) => alpha(theme.palette.error.main, 0.1),
+                        '&:hover': {
+                          backgroundColor: (theme) => alpha(theme.palette.error.main, 0.2),
+                        },
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
                   </Box>
-                )}
 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={showListPasswords[password.id] ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                    onClick={() => {
-                      const newState = { ...showListPasswords };
-                      newState[password.id] = !newState[password.id];
-                      setShowListPasswords(newState);
-                    }}
-                    sx={{ 
-                      borderColor: (theme) => alpha(theme.palette.primary.main, 0.5),
-                      '&:hover': {
-                        borderColor: 'primary.main',
-                        backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
-                      },
-                    }}
-                  >
-                    {showListPasswords[password.id] ? 'Verbergen' : 'Anzeigen'}
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<CopyIcon />}
-                    onClick={() => handleCopyPassword(password.id)}
-                    sx={{ 
-                      borderColor: (theme) => alpha(theme.palette.primary.main, 0.5),
-                      '&:hover': {
-                        borderColor: 'primary.main',
-                        backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
-                      },
-                    }}
-                  >
-                    Kopieren
-                  </Button>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+                  {password.url && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <LinkIcon sx={{ color: 'text.secondary', mr: 1, fontSize: 20 }} />
+                      <Typography 
+                        variant="body2" 
+                        color="text.secondary"
+                        sx={{ 
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {password.url}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={showListPasswords[password.id] ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                      onClick={() => {
+                        const newState = { ...showListPasswords };
+                        newState[password.id] = !newState[password.id];
+                        setShowListPasswords(newState);
+                      }}
+                      sx={{ 
+                        borderColor: (theme) => alpha(theme.palette.primary.main, 0.5),
+                        '&:hover': {
+                          borderColor: 'primary.main',
+                          backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                        },
+                      }}
+                    >
+                      {showListPasswords[password.id] ? 'Verbergen' : 'Anzeigen'}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<CopyIcon />}
+                      onClick={() => handleCopyPassword(password.id)}
+                      sx={{ 
+                        borderColor: (theme) => alpha(theme.palette.primary.main, 0.5),
+                        '&:hover': {
+                          borderColor: 'primary.main',
+                          backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                        },
+                      }}
+                    >
+                      Kopieren
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      )}
 
       <Dialog 
         open={open} 
