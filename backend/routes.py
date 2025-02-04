@@ -251,12 +251,51 @@ def generate_password():
     if request.method == 'OPTIONS':
         return '', 200
         
-    # Implementierung eines sicheren Passwortgenerators
-    import secrets
-    import string
-    
-    length = int(request.args.get('length', 16))
-    characters = string.ascii_letters + string.digits + string.punctuation
-    password = ''.join(secrets.choice(characters) for _ in range(length))
-    
-    return jsonify({'password': password})
+    try:
+        # Parameter aus der Anfrage lesen
+        length = min(max(int(request.args.get('length', 16)), 4), 128)  # Min 4, Max 128 Zeichen
+        use_uppercase = request.args.get('uppercase', 'true').lower() == 'true'
+        use_lowercase = request.args.get('lowercase', 'true').lower() == 'true'
+        use_numbers = request.args.get('numbers', 'true').lower() == 'true'
+        use_special = request.args.get('special', 'true').lower() == 'true'
+        
+        # Zeichensätze basierend auf den Parametern
+        characters = ''
+        if use_uppercase:
+            characters += string.ascii_uppercase
+        if use_lowercase:
+            characters += string.ascii_lowercase
+        if use_numbers:
+            characters += string.digits
+        if use_special:
+            characters += string.punctuation
+            
+        # Stelle sicher, dass mindestens ein Zeichensatz ausgewählt ist
+        if not characters:
+            characters = string.ascii_letters + string.digits
+            
+        # Generiere das Passwort
+        password = ''.join(secrets.choice(characters) for _ in range(length))
+        
+        # Stelle sicher, dass das Passwort die Mindestanforderungen erfüllt
+        if use_uppercase and not any(c.isupper() for c in password):
+            password = secrets.choice(string.ascii_uppercase) + password[1:]
+        if use_lowercase and not any(c.islower() for c in password):
+            password = password[:-1] + secrets.choice(string.ascii_lowercase)
+        if use_numbers and not any(c.isdigit() for c in password):
+            password = password[len(password)//2:] + secrets.choice(string.digits) + password[:len(password)//2]
+        if use_special and not any(c in string.punctuation for c in password):
+            pos = secrets.randbelow(len(password))
+            password = password[:pos] + secrets.choice(string.punctuation) + password[pos+1:]
+            
+        return jsonify({
+            'password': password,
+            'length': len(password),
+            'uppercase': any(c.isupper() for c in password),
+            'lowercase': any(c.islower() for c in password),
+            'numbers': any(c.isdigit() for c in password),
+            'special': any(c in string.punctuation for c in password)
+        })
+    except Exception as e:
+        print(f"Error in generate_password: {str(e)}")
+        return jsonify({'error': str(e)}), 500

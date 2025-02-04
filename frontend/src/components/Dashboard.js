@@ -21,6 +21,9 @@ import {
   CardActionArea,
   Divider,
   alpha,
+  Slider,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -33,6 +36,7 @@ import {
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
   Key as KeyIcon,
+  Refresh
 } from '@mui/icons-material';
 import axios from 'axios';
 
@@ -52,6 +56,13 @@ export default function Dashboard() {
     open: false,
     message: '',
     severity: 'success',
+  });
+  const [passwordOptions, setPasswordOptions] = useState({
+    length: 16,
+    uppercase: true,
+    lowercase: true,
+    numbers: true,
+    special: true
   });
 
   useEffect(() => {
@@ -138,10 +149,22 @@ export default function Dashboard() {
     }
   };
 
-  const handleGeneratePassword = async () => {
+  const generatePassword = async () => {
     try {
-      const response = await axios.get('/api/generate-password');
-      setFormData({ ...formData, password: response.data.password });
+      const params = new URLSearchParams({
+        length: passwordOptions.length,
+        uppercase: passwordOptions.uppercase,
+        lowercase: passwordOptions.lowercase,
+        numbers: passwordOptions.numbers,
+        special: passwordOptions.special
+      });
+      
+      const response = await axios.get(`/api/generate-password?${params}`);
+      setFormData(prev => ({
+        ...prev,
+        password: response.data.password
+      }));
+      showSnackbar('Passwort wurde generiert', 'success');
     } catch (error) {
       showSnackbar('Fehler beim Generieren des Passworts', 'error');
     }
@@ -171,6 +194,72 @@ export default function Dashboard() {
       [id]: !prev[id]
     }));
   };
+
+  const passwordGeneratorOptions = (
+    <Box sx={{ mb: 2 }}>
+      <Typography variant="subtitle2" gutterBottom>
+        Passwort-Generator Optionen
+      </Typography>
+      <Grid container spacing={2} alignItems="center">
+        <Grid item xs={12}>
+          <Typography variant="caption">
+            Länge: {passwordOptions.length}
+          </Typography>
+          <Slider
+            value={passwordOptions.length}
+            onChange={(_, value) => setPasswordOptions(prev => ({ ...prev, length: value }))}
+            min={4}
+            max={128}
+            valueLabelDisplay="auto"
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={passwordOptions.uppercase}
+                onChange={(e) => setPasswordOptions(prev => ({ ...prev, uppercase: e.target.checked }))}
+              />
+            }
+            label="Großbuchstaben"
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={passwordOptions.lowercase}
+                onChange={(e) => setPasswordOptions(prev => ({ ...prev, lowercase: e.target.checked }))}
+              />
+            }
+            label="Kleinbuchstaben"
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={passwordOptions.numbers}
+                onChange={(e) => setPasswordOptions(prev => ({ ...prev, numbers: e.target.checked }))}
+              />
+            }
+            label="Zahlen"
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={passwordOptions.special}
+                onChange={(e) => setPasswordOptions(prev => ({ ...prev, special: e.target.checked }))}
+              />
+            }
+            label="Sonderzeichen"
+          />
+        </Grid>
+      </Grid>
+    </Box>
+  );
 
   return (
     <Box>
@@ -344,6 +433,7 @@ export default function Dashboard() {
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               sx={{ mb: 2 }}
             />
+            {passwordGeneratorOptions}
             <TextField
               margin="normal"
               required
@@ -355,18 +445,9 @@ export default function Dashboard() {
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <Button 
-                      onClick={handleGeneratePassword}
-                      sx={{ 
-                        minWidth: 'auto',
-                        backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
-                        '&:hover': {
-                          backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.2),
-                        },
-                      }}
-                    >
-                      <KeyIcon />
-                    </Button>
+                    <IconButton onClick={generatePassword}>
+                      <Refresh />
+                    </IconButton>
                   </InputAdornment>
                 ),
               }}
