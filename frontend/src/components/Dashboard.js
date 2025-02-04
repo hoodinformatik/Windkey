@@ -70,6 +70,13 @@ export default function Dashboard() {
     fetchPasswords();
   }, []);
 
+  useEffect(() => {
+    // Generate password when options change
+    if (open) {  // Only generate if dialog is open
+      generatePassword();
+    }
+  }, [passwordOptions]);  // Run effect when any option changes
+
   const fetchPasswords = async () => {
     try {
       const response = await axios.get('/api/passwords');
@@ -165,7 +172,6 @@ export default function Dashboard() {
         ...prev,
         password: response.data.password
       }));
-      showSnackbar('Passwort wurde generiert', 'success');
     } catch (error) {
       showSnackbar('Fehler beim Generieren des Passworts', 'error');
     }
@@ -189,6 +195,10 @@ export default function Dashboard() {
     });
   };
 
+  const handleOptionChange = (option, value) => {
+    setPasswordOptions(prev => ({ ...prev, [option]: value }));
+  };
+
   const passwordGeneratorOptions = (
     <Box sx={{ mb: 2 }}>
       <Typography variant="subtitle2" gutterBottom>
@@ -201,7 +211,7 @@ export default function Dashboard() {
           </Typography>
           <Slider
             value={passwordOptions.length}
-            onChange={(_, value) => setPasswordOptions(prev => ({ ...prev, length: value }))}
+            onChange={(_, value) => handleOptionChange('length', value)}
             min={4}
             max={128}
             valueLabelDisplay="auto"
@@ -212,7 +222,7 @@ export default function Dashboard() {
             control={
               <Checkbox
                 checked={passwordOptions.uppercase}
-                onChange={(e) => setPasswordOptions(prev => ({ ...prev, uppercase: e.target.checked }))}
+                onChange={(e) => handleOptionChange('uppercase', e.target.checked)}
               />
             }
             label="Großbuchstaben"
@@ -223,7 +233,7 @@ export default function Dashboard() {
             control={
               <Checkbox
                 checked={passwordOptions.lowercase}
-                onChange={(e) => setPasswordOptions(prev => ({ ...prev, lowercase: e.target.checked }))}
+                onChange={(e) => handleOptionChange('lowercase', e.target.checked)}
               />
             }
             label="Kleinbuchstaben"
@@ -234,7 +244,7 @@ export default function Dashboard() {
             control={
               <Checkbox
                 checked={passwordOptions.numbers}
-                onChange={(e) => setPasswordOptions(prev => ({ ...prev, numbers: e.target.checked }))}
+                onChange={(e) => handleOptionChange('numbers', e.target.checked)}
               />
             }
             label="Zahlen"
@@ -245,7 +255,7 @@ export default function Dashboard() {
             control={
               <Checkbox
                 checked={passwordOptions.special}
-                onChange={(e) => setPasswordOptions(prev => ({ ...prev, special: e.target.checked }))}
+                onChange={(e) => handleOptionChange('special', e.target.checked)}
               />
             }
             label="Sonderzeichen"
@@ -446,7 +456,7 @@ export default function Dashboard() {
                     <IconButton onClick={() => setShowDialogPassword(!showDialogPassword)}>
                       {showDialogPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                     </IconButton>
-                    <IconButton onClick={generatePassword}>
+                    <IconButton onClick={generatePassword} title="Neues Passwort generieren">
                       <Refresh />
                     </IconButton>
                   </InputAdornment>
