@@ -23,8 +23,9 @@ import {
   Info as InfoIcon,
   ContentCopy as ContentCopyIcon
 } from '@mui/icons-material';
+import axios from 'axios';
 
-const Stats = ({ passwords, showSnackbar }) => {
+const Stats = ({ passwords, showSnackbar, handleOpen }) => {
   const calculatePasswordStrength = (password) => {
     if (!password) return { score: 0, label: 'Kein Passwort', color: 'error' };
     
@@ -100,7 +101,38 @@ const Stats = ({ passwords, showSnackbar }) => {
   const stats = getPasswordStats();
 
   const [openDuplicatesDialog, setOpenDuplicatesDialog] = useState(false);
-  
+  const [openBreachedDialog, setOpenBreachedDialog] = useState(false);
+  const [breachedPasswords, setBreachedPasswords] = useState([]);
+  const [checkingBreaches, setCheckingBreaches] = useState(false);
+
+  const checkForBreaches = async () => {
+    setCheckingBreaches(true);
+    const breached = [];
+    
+    try {
+      for (const password of passwords) {
+        const response = await axios.post('/api/check-password-breach', {
+          password: password.password
+        });
+        
+        if (response.data.breached) {
+          breached.push({
+            ...password,
+            breachCount: response.data.count
+          });
+        }
+      }
+      setBreachedPasswords(breached);
+      if (breached.length > 0) {
+        showSnackbar(`${breached.length} kompromittierte Passwörter gefunden!`, 'error');
+      }
+    } catch (error) {
+      showSnackbar('Fehler bei der Überprüfung der Passwörter', 'error');
+    } finally {
+      setCheckingBreaches(false);
+    }
+  };
+
   const getDuplicateGroups = () => {
     const groups = {};
     passwords.forEach(p => {
@@ -205,13 +237,50 @@ const Stats = ({ passwords, showSnackbar }) => {
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Sehr stark"
-            value={stats.strength.veryStrong}
-            icon={<CheckCircleIcon color="success" />}
-            color="success"
-            tooltip="Anzahl der sehr starken Passwörter"
-          />
+          <Card 
+            sx={{ 
+              height: '100%', 
+              cursor: breachedPasswords.length > 0 || checkingBreaches ? 'pointer' : 'default',
+              '&:hover': (breachedPasswords.length > 0 || checkingBreaches) ? {
+                transform: 'scale(1.02)',
+                transition: 'transform 0.2s'
+              } : {}
+            }}
+            onClick={() => breachedPasswords.length > 0 && setOpenBreachedDialog(true)}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <SecurityIcon color={checkingBreaches ? 'info' : breachedPasswords.length > 0 ? 'error' : 'success'} />
+                <Typography variant="h6" sx={{ ml: 1 }}>
+                  Sicherheit
+                </Typography>
+              </Box>
+              <Typography 
+                variant="h4" 
+                color={checkingBreaches ? 'info.main' : breachedPasswords.length > 0 ? 'error.main' : 'success.main'}
+              >
+                {checkingBreaches ? (
+                  'Prüfe...'
+                ) : breachedPasswords.length > 0 ? (
+                  breachedPasswords.length
+                ) : (
+                  'Sicher'
+                )}
+              </Typography>
+              {!checkingBreaches && (
+                <Button 
+                  size="small" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    checkForBreaches();
+                  }}
+                  sx={{ mt: 1 }}
+                >
+                  Erneut prüfen
+                </Button>
+              )}
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
 
@@ -313,6 +382,61 @@ const Stats = ({ passwords, showSnackbar }) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDuplicatesDialog(false)}>
+            Schließen
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog für kompromittierte Passwörter */}
+      <Dialog
+        open={openBreachedDialog}
+        onClose={() => setOpenBreachedDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <SecurityIcon color="error" sx={{ mr: 1 }} />
+            Kompromittierte Passwörter
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 3 }}>
+            Die folgenden Passwörter wurden in Datenlecks gefunden und sollten geändert werden:
+          </Typography>
+          {breachedPasswords.map((item, index) => (
+            <Paper key={index} variant="outlined" sx={{ p: 2, mb: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <Box>
+                  <Typography variant="h6">{item.title}</Typography>
+                  {item.url && (
+                    <Typography variant="body2" color="text.secondary">
+                      {item.url}
+                    </Typography>
+                  )}
+                  <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+                    In {item.breachCount.toLocaleString()} Datenlecks gefunden
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="small"
+                    onClick={() => {
+                      handleOpen(item);
+                      setOpenBreachedDialog(false);
+                    }}
+                  >
+                    Passwort ändern
+                  </Button>
+                </Box>
+              </Box>
+            </Paper>
+          ))}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenBreachedDialog(false)}>
             Schließen
           </Button>
         </DialogActions>

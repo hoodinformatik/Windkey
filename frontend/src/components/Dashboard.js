@@ -369,6 +369,7 @@ export default function Dashboard() {
         <Stats 
           passwords={passwords} 
           showSnackbar={(message, severity) => setSnackbar({ open: true, message, severity })}
+          handleOpen={handleOpen}
         />
       ) : (
         <Grid container spacing={3}>

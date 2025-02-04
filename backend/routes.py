@@ -11,6 +11,8 @@ from cryptography.fernet import Fernet
 import qrcode
 from io import BytesIO
 import base64
+import hashlib
+import requests
 
 # Verschlüsselungshelfer
 ENCRYPTION_KEY_FILE = 'encryption.key'
@@ -298,4 +300,40 @@ def generate_password():
         })
     except Exception as e:
         print(f"Error in generate_password: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/check-password-breach', methods=['POST'])
+@login_required
+def check_password_breach():
+    try:
+        data = request.get_json()
+        password = data.get('password')
+        
+        # Generate SHA-1 hash of password
+        sha1_hash = hashlib.sha1(password.encode('utf-8')).hexdigest().upper()
+        prefix = sha1_hash[:5]
+        suffix = sha1_hash[5:]
+        
+        # Query haveibeenpwned API
+        url = f'https://api.pwnedpasswords.com/range/{prefix}'
+        headers = {
+            'User-Agent': 'Windkey Password Manager',
+            'Accept': 'application/json'
+        }
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code != 200:
+            return jsonify({'error': 'API request failed'}), 500
+            
+        # Check if hash suffix is in response
+        hashes = (line.split(':') for line in response.text.splitlines())
+        count = next((int(count) for hash_suffix, count in hashes if hash_suffix == suffix), 0)
+        
+        return jsonify({
+            'breached': count > 0,
+            'count': count
+        })
+        
+    except Exception as e:
+        print(f"Error in check_password_breach: {str(e)}")
         return jsonify({'error': str(e)}), 500
