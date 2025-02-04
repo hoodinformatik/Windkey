@@ -72,15 +72,22 @@ export default function Dashboard() {
     password.url?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleOpen = (password = null) => {
+  const handleOpen = async (password = null) => {
     if (password) {
-      setEditingPassword(password);
-      setFormData({
-        title: password.title,
-        password: '',
-        url: password.url || '',
-        notes: password.notes || '',
-      });
+      try {
+        // Lade das vollständige Passwort mit allen Details
+        const response = await axios.get(`/api/passwords/${password.id}`);
+        const fullPassword = response.data;
+        setEditingPassword(password);
+        setFormData({
+          title: fullPassword.title,
+          password: fullPassword.password, // Jetzt haben wir das entschlüsselte Passwort
+          url: fullPassword.url || '',
+          notes: fullPassword.notes || '',
+        });
+      } catch (error) {
+        showSnackbar('Fehler beim Laden des Passworts', 'error');
+      }
     } else {
       setEditingPassword(null);
       setFormData({

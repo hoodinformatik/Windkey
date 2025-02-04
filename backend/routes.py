@@ -127,15 +127,20 @@ def get_passwords():
     if request.method == 'OPTIONS':
         return '', 200
         
-    passwords = Password.query.filter_by(user_id=current_user.id).all()
-    return jsonify([{
-        'id': p.id,
-        'title': p.title,
-        'url': p.url,
-        'notes': p.notes,
-        'created_at': p.created_at.isoformat(),
-        'updated_at': p.updated_at.isoformat()
-    } for p in passwords])
+    try:
+        passwords = Password.query.filter_by(user_id=current_user.id).all()
+        return jsonify([{
+            'id': p.id,
+            'title': p.title,
+            'password': cipher_suite.decrypt(p.encrypted_password).decode(),
+            'url': p.url,
+            'notes': p.notes,
+            'created_at': p.created_at.isoformat(),
+            'updated_at': p.updated_at.isoformat()
+        } for p in passwords])
+    except Exception as e:
+        print(f"Error in get_passwords: {str(e)}")  # Debug-Ausgabe
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/passwords', methods=['POST', 'OPTIONS'])
 @login_required
@@ -143,23 +148,38 @@ def create_password():
     if request.method == 'OPTIONS':
         return '', 200
         
-    data = request.get_json()
-    
-    # Passwort verschlüsseln
-    encrypted_password = cipher_suite.encrypt(data['password'].encode())
-    
-    password = Password(
-        title=data['title'],
-        encrypted_password=encrypted_password,
-        notes=data.get('notes'),
-        url=data.get('url'),
-        user_id=current_user.id
-    )
-    
-    db.session.add(password)
-    db.session.commit()
-    
-    return jsonify({'message': 'Password created successfully'}), 201
+    try:
+        data = request.get_json()
+        if not data or 'password' not in data:
+            return jsonify({'error': 'Password is required'}), 400
+            
+        # Verschlüssele das Passwort
+        encrypted_password = cipher_suite.encrypt(data['password'].encode())
+        
+        password = Password(
+            user_id=current_user.id,
+            title=data.get('title', 'Untitled'),
+            encrypted_password=encrypted_password,
+            url=data.get('url', ''),
+            notes=data.get('notes', '')
+        )
+        
+        db.session.add(password)
+        db.session.commit()
+        
+        return jsonify({
+            'id': password.id,
+            'title': password.title,
+            'url': password.url,
+            'notes': password.notes,
+            'created_at': password.created_at.isoformat(),
+            'updated_at': password.updated_at.isoformat()
+        }), 201
+        
+    except Exception as e:
+        print(f"Error in create_password: {str(e)}")  # Debug-Ausgabe
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/passwords/<int:id>', methods=['PUT', 'OPTIONS'])
 @login_required
@@ -192,22 +212,23 @@ def get_password(id):
     if request.method == 'OPTIONS':
         return '', 200
         
-    password = Password.query.get_or_404(id)
-    
-    if password.user_id != current_user.id:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    decrypted_password = cipher_suite.decrypt(password.encrypted_password).decode()
-    
-    return jsonify({
-        'id': password.id,
-        'title': password.title,
-        'password': decrypted_password,
-        'url': password.url,
-        'notes': password.notes,
-        'created_at': password.created_at.isoformat(),
-        'updated_at': password.updated_at.isoformat()
-    })
+    try:
+        password = Password.query.filter_by(id=id, user_id=current_user.id).first()
+        if not password:
+            return jsonify({'error': 'Password not found'}), 404
+            
+        return jsonify({
+            'id': password.id,
+            'title': password.title,
+            'password': cipher_suite.decrypt(password.encrypted_password).decode(),
+            'url': password.url,
+            'notes': password.notes,
+            'created_at': password.created_at.isoformat(),
+            'updated_at': password.updated_at.isoformat()
+        })
+    except Exception as e:
+        print(f"Error in get_password: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/passwords/<int:id>', methods=['DELETE', 'OPTIONS'])
 @login_required
