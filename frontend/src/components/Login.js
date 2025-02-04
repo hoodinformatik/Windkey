@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Container,
@@ -22,7 +21,6 @@ import {
 } from '@mui/icons-material';
 
 export default function Login() {
-  const navigate = useNavigate();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,9 +33,7 @@ export default function Login() {
     setError('');
 
     const result = await login(email, password, twoFactorCode);
-    if (result.success) {
-      navigate('/');
-    } else {
+    if (!result.success) {
       setError(result.error);
     }
   };

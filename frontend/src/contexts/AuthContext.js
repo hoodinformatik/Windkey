@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext(null);
 
@@ -13,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Prüfe beim Start, ob der Benutzer bereits eingeloggt ist
@@ -25,6 +27,8 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (error) {
         console.error('Auth check failed:', error);
+        setUser(null);
+        setIsAuthenticated(false);
       } finally {
         setLoading(false);
       }
@@ -32,6 +36,17 @@ export const AuthProvider = ({ children }) => {
 
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    // Wenn der Auth-Status sich ändert, leite entsprechend weiter
+    if (!loading) {
+      if (isAuthenticated) {
+        navigate('/');
+      } else {
+        navigate('/login');
+      }
+    }
+  }, [isAuthenticated, loading, navigate]);
 
   const login = async (email, password, twoFactorCode) => {
     try {
@@ -45,6 +60,8 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       return { success: true };
     } catch (error) {
+      setUser(null);
+      setIsAuthenticated(false);
       return {
         success: false,
         error: error.response?.data?.error || 'Ein Fehler ist aufgetreten'
@@ -75,10 +92,12 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await axios.post('/api/logout');
-      setUser(null);
-      setIsAuthenticated(false);
     } catch (error) {
       console.error('Logout failed:', error);
+    } finally {
+      setUser(null);
+      setIsAuthenticated(false);
+      navigate('/login');
     }
   };
 
