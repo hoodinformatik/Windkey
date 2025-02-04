@@ -45,7 +45,8 @@ export default function Dashboard() {
   const [open, setOpen] = useState(false);
   const [editingPassword, setEditingPassword] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showPassword, setShowPassword] = useState({});
+  const [showListPasswords, setShowListPasswords] = useState({});
+  const [showDialogPassword, setShowDialogPassword] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     password: '',
@@ -186,13 +187,6 @@ export default function Dashboard() {
       message,
       severity,
     });
-  };
-
-  const togglePasswordVisibility = (id) => {
-    setShowPassword(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
   };
 
   const passwordGeneratorOptions = (
@@ -371,8 +365,12 @@ export default function Dashboard() {
                   <Button
                     variant="outlined"
                     size="small"
-                    startIcon={showPassword[password.id] ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                    onClick={() => togglePasswordVisibility(password.id)}
+                    startIcon={showListPasswords[password.id] ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    onClick={() => {
+                      const newState = { ...showListPasswords };
+                      newState[password.id] = !newState[password.id];
+                      setShowListPasswords(newState);
+                    }}
                     sx={{ 
                       borderColor: (theme) => alpha(theme.palette.primary.main, 0.5),
                       '&:hover': {
@@ -381,7 +379,7 @@ export default function Dashboard() {
                       },
                     }}
                   >
-                    {showPassword[password.id] ? 'Verbergen' : 'Anzeigen'}
+                    {showListPasswords[password.id] ? 'Verbergen' : 'Anzeigen'}
                   </Button>
                   <Button
                     variant="outlined"
@@ -439,12 +437,15 @@ export default function Dashboard() {
               required
               fullWidth
               label="Passwort"
-              type="password"
+              type={showDialogPassword ? "text" : "password"}
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
+                    <IconButton onClick={() => setShowDialogPassword(!showDialogPassword)}>
+                      {showDialogPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
                     <IconButton onClick={generatePassword}>
                       <Refresh />
                     </IconButton>
