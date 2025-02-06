@@ -8,7 +8,7 @@ import {
   Button,
   Typography,
   Box,
-  Link,
+  Link as MuiLink,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -25,6 +25,7 @@ import {
   VisibilityOff as VisibilityOffIcon,
   QrCode2 as QrCode2Icon,
 } from '@mui/icons-material';
+import { Link as RouterLink } from 'react-router-dom';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -227,8 +228,9 @@ export default function Register() {
               <Box sx={{ mt: 3, textAlign: 'center' }}>
                 <Typography variant="body2" color="text.secondary">
                   Bereits ein Konto?{' '}
-                  <Link
-                    href="/login"
+                  <MuiLink
+                    component={RouterLink}
+                    to="/login"
                     sx={{
                       color: 'primary.main',
                       textDecoration: 'none',
@@ -238,7 +240,7 @@ export default function Register() {
                     }}
                   >
                     Anmelden
-                  </Link>
+                  </MuiLink>
                 </Typography>
               </Box>
             </Box>

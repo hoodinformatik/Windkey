@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -7,7 +8,7 @@ import {
   Button,
   Typography,
   Box,
-  Link,
+  Link as MuiLink,
   InputAdornment,
   IconButton,
 } from '@mui/material';
@@ -230,8 +231,9 @@ export default function Login() {
             </Button>
 
             <Box sx={{ textAlign: 'center' }}>
-              <Link 
-                href="/register" 
+              <MuiLink 
+                component={RouterLink}
+                to="/register" 
                 variant="body1"
                 sx={{
                   color: 'primary.main',
@@ -243,7 +245,7 @@ export default function Login() {
                 }}
               >
                 Noch kein Konto? Jetzt registrieren
-              </Link>
+              </MuiLink>
             </Box>
           </Box>
         </Paper>

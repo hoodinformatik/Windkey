@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
     if (!loading) {
       if (isAuthenticated) {
         navigate('/');
-      } else {
+      } else if (window.location.pathname !== '/register') {
         navigate('/login');
       }
     }

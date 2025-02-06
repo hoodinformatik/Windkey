@@ -96,15 +96,21 @@ def login():
         return '', 200
         
     data = request.get_json()
+    print("Login attempt for email:", data['email'])  # Debug log
     user = User.query.filter_by(email=data['email']).first()
     
     if not user or not user.check_password(data['password']):
         return jsonify({'error': 'Invalid credentials'}), 401
     
     totp = pyotp.TOTP(user.two_factor_secret)
-    if not totp.verify(data['two_factor_code']):
+    provided_code = data['two_factor_code']
+    print("2FA verification - Secret:", user.two_factor_secret)  # Debug log
+    print("2FA verification - Provided code:", provided_code)  # Debug log
+    if not totp.verify(provided_code, valid_window=1):
+        print("2FA verification failed")  # Debug log
         return jsonify({'error': 'Invalid 2FA code'}), 401
     
+    print("Login successful")  # Debug log
     login_user(user)
     return jsonify({
         'message': 'Login successful',
