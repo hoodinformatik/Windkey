@@ -386,24 +386,34 @@ export default function Layout() {
         <DialogTitle>Neues Passwort erstellen</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+            {error && (
+              <Alert severity="error" sx={{ mb: 1 }}>
+                {error}
+              </Alert>
+            )}
             <TextField
-              name="title"
-              label="Titel"
-              value={newPassword.title}
-              onChange={handleInputChange}
-              fullWidth
+              margin="normal"
               required
-              error={error && !newPassword.title}
+              fullWidth
+              label="Title"
+              value={newPassword.title}
+              onChange={(e) => setNewPassword(prev => ({ ...prev, title: e.target.value }))}
+              error={!newPassword.title}
+              helperText={!newPassword.title ? 'Title is required' : ''}
             />
             
-            <FormControl variant="outlined" fullWidth required error={error && !newPassword.password}>
+            <FormControl 
+              fullWidth 
+              margin="normal"
+              error={!newPassword.password}
+            >
               <InputLabel htmlFor="password">Passwort</InputLabel>
               <OutlinedInput
                 id="password"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
                 value={newPassword.password}
-                onChange={handleInputChange}
+                onChange={(e) => setNewPassword(prev => ({ ...prev, password: e.target.value }))}
                 endAdornment={
                   <InputAdornment position="end">
                     <Tooltip title="Passwort kopieren">
@@ -426,6 +436,9 @@ export default function Layout() {
                 }
                 label="Passwort"
               />
+              {!newPassword.password && (
+                <FormHelperText error>Password is required</FormHelperText>
+              )}
               <FormHelperText>
                 Stärke: {passwordStrength.label}
               </FormHelperText>
@@ -515,12 +528,6 @@ export default function Layout() {
               multiline
               rows={4}
             />
-
-            {error && (
-              <FormHelperText error>
-                {error}
-              </FormHelperText>
-            )}
 
             {showCopiedMessage && (
               <Alert severity="success" sx={{ mt: 1 }}>

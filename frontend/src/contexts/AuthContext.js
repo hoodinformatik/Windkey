@@ -54,6 +54,7 @@ export const AuthProvider = ({ children }) => {
       
       setUser(response.data.user);
       setIsAuthenticated(true);
+      navigate('/dashboard');
       return { success: true };
     } catch (error) {
       setUser(null);

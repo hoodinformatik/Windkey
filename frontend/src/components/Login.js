@@ -11,6 +11,7 @@ import {
   Link as MuiLink,
   InputAdornment,
   IconButton,
+  Alert,
 } from '@mui/material';
 import {
   Security as SecurityIcon,
@@ -32,6 +33,11 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (!email || !password || !twoFactorCode) {
+      setError('All fields are required');
+      return;
+    }
 
     const result = await login(email, password, twoFactorCode);
     if (!result.success) {
@@ -89,6 +95,12 @@ export default function Login() {
             </Typography>
           </Box>
 
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
           <Box component="form" onSubmit={handleSubmit}>
             <TextField
               margin="normal"
@@ -101,6 +113,8 @@ export default function Login() {
               autoFocus
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              error={!!error && !email}
+              helperText={error && !email ? 'Email is required' : ''}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -132,6 +146,8 @@ export default function Login() {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              error={!!error && !password}
+              helperText={error && !password ? 'Password is required' : ''}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -173,6 +189,8 @@ export default function Login() {
               id="twoFactorCode"
               value={twoFactorCode}
               onChange={(e) => setTwoFactorCode(e.target.value)}
+              error={!!error && !twoFactorCode}
+              helperText={error && !twoFactorCode ? '2FA Code is required' : ''}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -194,29 +212,13 @@ export default function Login() {
               }}
             />
 
-            {error && (
-              <Typography 
-                color="error" 
-                sx={{ 
-                  mt: 1, 
-                  mb: 2,
-                  p: 1,
-                  borderRadius: 1,
-                  textAlign: 'center',
-                  backgroundColor: 'error.dark',
-                }}
-              >
-                {error}
-              </Typography>
-            )}
-
             <Button
               type="submit"
               fullWidth
               variant="contained"
-              sx={{
-                mt: 1,
-                mb: 3,
+              sx={{ 
+                mt: 3, 
+                mb: 2,
                 py: 1.5,
                 fontSize: '1rem',
                 fontWeight: 600,
@@ -231,14 +233,13 @@ export default function Login() {
             </Button>
 
             <Box sx={{ textAlign: 'center' }}>
-              <MuiLink 
+              <MuiLink
                 component={RouterLink}
-                to="/register" 
-                variant="body1"
+                to="/register"
+                variant="body2"
                 sx={{
                   color: 'primary.main',
                   textDecoration: 'none',
-                  fontWeight: 500,
                   '&:hover': {
                     textDecoration: 'underline',
                   },
