@@ -38,13 +38,9 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    // Wenn der Auth-Status sich ändert, leite entsprechend weiter
-    if (!loading) {
-      if (isAuthenticated) {
-        navigate('/');
-      } else if (window.location.pathname !== '/register') {
-        navigate('/login');
-      }
+    // Only redirect to login if not authenticated and not on register page
+    if (!loading && !isAuthenticated && window.location.pathname !== '/register') {
+      navigate('/login');
     }
   }, [isAuthenticated, loading, navigate]);
 

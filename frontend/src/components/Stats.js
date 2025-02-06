@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -14,6 +14,9 @@ import {
   DialogActions,
   Button,
   IconButton,
+  CircularProgress,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import {
   Security as SecurityIcon,
@@ -25,7 +28,41 @@ import {
 } from '@mui/icons-material';
 import axios from 'axios';
 
-const Stats = ({ passwords, showSnackbar, handleOpen }) => {
+const Stats = () => {
+  const [passwords, setPasswords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [openDuplicatesDialog, setOpenDuplicatesDialog] = useState(false);
+  const [openBreachedDialog, setOpenBreachedDialog] = useState(false);
+  const [breachedPasswords, setBreachedPasswords] = useState([]);
+  const [checkingBreaches, setCheckingBreaches] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  const [selectedPassword, setSelectedPassword] = useState(null);
+
+  const handleSnackbarClose = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
+  const showSnackbarMessage = (message, severity = 'info') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  useEffect(() => {
+    const fetchPasswords = async () => {
+      try {
+        const response = await axios.get('/api/passwords');
+        setPasswords(response.data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Failed to fetch passwords:', err);
+        setError('Failed to load passwords');
+        setLoading(false);
+      }
+    };
+
+    fetchPasswords();
+  }, []);
+
   const calculatePasswordStrength = (password) => {
     if (!password) return { score: 0, label: 'Kein Passwort', color: 'error' };
     
@@ -56,6 +93,23 @@ const Stats = ({ passwords, showSnackbar, handleOpen }) => {
   };
 
   const getPasswordStats = () => {
+    if (!passwords || passwords.length === 0) {
+      return {
+        total: 0,
+        strength: {
+          veryWeak: 0,
+          weak: 0,
+          medium: 0,
+          strong: 0,
+          veryStrong: 0
+        },
+        duplicates: 0,
+        averageLength: 0,
+        shortPasswords: 0,
+        longPasswords: 0
+      };
+    }
+
     const stats = {
       total: passwords.length,
       strength: {
@@ -71,14 +125,14 @@ const Stats = ({ passwords, showSnackbar, handleOpen }) => {
       longPasswords: 0
     };
 
-    // Zähle doppelte Passwörter
+    // Count duplicate passwords
     const passwordCounts = {};
     passwords.forEach(p => {
       passwordCounts[p.password] = (passwordCounts[p.password] || 0) + 1;
     });
     stats.duplicates = Object.values(passwordCounts).filter(count => count > 1).length;
 
-    // Berechne andere Statistiken
+    // Calculate other statistics
     passwords.forEach(p => {
       const strength = calculatePasswordStrength(p.password);
       
@@ -97,13 +151,6 @@ const Stats = ({ passwords, showSnackbar, handleOpen }) => {
 
     return stats;
   };
-
-  const stats = getPasswordStats();
-
-  const [openDuplicatesDialog, setOpenDuplicatesDialog] = useState(false);
-  const [openBreachedDialog, setOpenBreachedDialog] = useState(false);
-  const [breachedPasswords, setBreachedPasswords] = useState([]);
-  const [checkingBreaches, setCheckingBreaches] = useState(false);
 
   const checkForBreaches = async () => {
     setCheckingBreaches(true);
@@ -124,10 +171,11 @@ const Stats = ({ passwords, showSnackbar, handleOpen }) => {
       }
       setBreachedPasswords(breached);
       if (breached.length > 0) {
-        showSnackbar(`${breached.length} kompromittierte Passwörter gefunden!`, 'error');
+        showSnackbarMessage(`${breached.length} kompromittierte Passwörter gefunden!`, 'error');
+        setOpenBreachedDialog(true);
       }
     } catch (error) {
-      showSnackbar('Fehler bei der Überprüfung der Passwörter', 'error');
+      showSnackbarMessage('Fehler bei der Überprüfung der Passwörter', 'error');
     } finally {
       setCheckingBreaches(false);
     }
@@ -181,267 +229,297 @@ const Stats = ({ passwords, showSnackbar, handleOpen }) => {
     </Box>
   );
 
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', pt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ textAlign: 'center', pt: 4 }}>
+        <Typography color="error">{error}</Typography>
+      </Box>
+    );
+  }
+
+  const stats = getPasswordStats();
+
   return (
-    <Box>
-      <Typography variant="h4" sx={{ mb: 4 }}>
-        Passwort-Statistiken
-      </Typography>
-
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card 
-            sx={{ 
-              height: '100%', 
-              cursor: stats.duplicates > 0 ? 'pointer' : 'default',
-              '&:hover': stats.duplicates > 0 ? {
-                transform: 'scale(1.02)',
-                transition: 'transform 0.2s'
-              } : {}
-            }}
-            onClick={() => stats.duplicates > 0 && setOpenDuplicatesDialog(true)}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <WarningIcon color="warning" />
-                <Typography variant="h6" sx={{ ml: 1 }}>
-                  Duplikate
-                </Typography>
-              </Box>
-              <Typography variant="h4" color="warning.main">
-                {stats.duplicates}
-              </Typography>
-              {stats.duplicates > 0 && (
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                  Klicken für Details
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Gesamt"
-            value={stats.total}
-            icon={<SecurityIcon color="primary" />}
-            color="primary"
-            tooltip="Gesamtzahl der gespeicherten Passwörter"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Ø Länge"
-            value={stats.averageLength}
-            icon={<InfoIcon color="info" />}
-            color="info"
-            tooltip="Durchschnittliche Passwortlänge"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card 
-            sx={{ 
-              height: '100%', 
-              cursor: breachedPasswords.length > 0 || checkingBreaches ? 'pointer' : 'default',
-              '&:hover': (breachedPasswords.length > 0 || checkingBreaches) ? {
-                transform: 'scale(1.02)',
-                transition: 'transform 0.2s'
-              } : {}
-            }}
-            onClick={() => breachedPasswords.length > 0 && setOpenBreachedDialog(true)}
-          >
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <SecurityIcon color={checkingBreaches ? 'info' : breachedPasswords.length > 0 ? 'error' : 'success'} />
-                <Typography variant="h6" sx={{ ml: 1 }}>
-                  Sicherheit
-                </Typography>
-              </Box>
-              <Typography 
-                variant="h4" 
-                color={checkingBreaches ? 'info.main' : breachedPasswords.length > 0 ? 'error.main' : 'success.main'}
-              >
-                {checkingBreaches ? (
-                  'Prüfe...'
-                ) : breachedPasswords.length > 0 ? (
-                  breachedPasswords.length
-                ) : (
-                  'Sicher'
-                )}
-              </Typography>
-              {!checkingBreaches && (
-                <Button 
-                  size="small" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    checkForBreaches();
-                  }}
-                  sx={{ mt: 1 }}
-                >
-                  Erneut prüfen
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" sx={{ mb: 3 }}>
-          Passwort-Stärke Verteilung
+    <>
+      <Box>
+        <Typography variant="h4" sx={{ mb: 4 }}>
+          Passwort-Statistiken
         </Typography>
-        <StrengthBar
-          label="Sehr stark"
-          value={stats.strength.veryStrong}
-          total={stats.total}
-          color="success"
-        />
-        <StrengthBar
-          label="Stark"
-          value={stats.strength.strong}
-          total={stats.total}
-          color="info"
-        />
-        <StrengthBar
-          label="Mittel"
-          value={stats.strength.medium}
-          total={stats.total}
-          color="warning"
-        />
-        <StrengthBar
-          label="Schwach"
-          value={stats.strength.weak}
-          total={stats.total}
-          color="error"
-        />
-        <StrengthBar
-          label="Sehr schwach"
-          value={stats.strength.veryWeak}
-          total={stats.total}
-          color="error"
-        />
-      </Paper>
 
-      {/* Dialog für Duplikate */}
-      <Dialog
-        open={openDuplicatesDialog}
-        onClose={() => setOpenDuplicatesDialog(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <WarningIcon color="warning" sx={{ mr: 1 }} />
-            Gefundene Duplikate
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          {duplicateGroups.map((group, index) => (
-            <Box key={index} sx={{ mb: 3 }}>
-              <Typography variant="subtitle1" color="warning.main" sx={{ mb: 1 }}>
-                Gruppe {index + 1} ({group.length} Einträge)
-              </Typography>
-              <Paper variant="outlined" sx={{ p: 2 }}>
-                {group.map((item, i) => (
-                  <Box 
-                    key={i} 
-                    sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'space-between',
-                      mb: i < group.length - 1 ? 1 : 0,
-                      pb: i < group.length - 1 ? 1 : 0,
-                      borderBottom: i < group.length - 1 ? '1px solid' : 'none',
-                      borderColor: 'divider'
-                    }}
-                  >
-                    <Box>
-                      <Typography variant="body1">{item.title}</Typography>
-                      {item.url && (
-                        <Typography variant="caption" color="text.secondary">
-                          {item.url}
-                        </Typography>
-                      )}
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Tooltip title="Passwort kopieren">
-                        <IconButton 
-                          size="small"
-                          onClick={() => {
-                            navigator.clipboard.writeText(item.password);
-                            showSnackbar('Passwort wurde kopiert', 'success');
-                          }}
-                        >
-                          <ContentCopyIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </Box>
-                ))}
-              </Paper>
-            </Box>
-          ))}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDuplicatesDialog(false)}>
-            Schließen
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Dialog für kompromittierte Passwörter */}
-      <Dialog
-        open={openBreachedDialog}
-        onClose={() => setOpenBreachedDialog(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <SecurityIcon color="error" sx={{ mr: 1 }} />
-            Kompromittierte Passwörter
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{ mb: 3 }}>
-            Die folgenden Passwörter wurden in Datenlecks gefunden und sollten geändert werden:
-          </Typography>
-          {breachedPasswords.map((item, index) => (
-            <Paper key={index} variant="outlined" sx={{ p: 2, mb: 2 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Box>
-                  <Typography variant="h6">{item.title}</Typography>
-                  {item.url && (
-                    <Typography variant="body2" color="text.secondary">
-                      {item.url}
-                    </Typography>
-                  )}
-                  <Typography variant="body2" color="error" sx={{ mt: 1 }}>
-                    In {item.breachCount.toLocaleString()} Datenlecks gefunden
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card 
+              sx={{ 
+                height: '100%', 
+                cursor: stats.duplicates > 0 ? 'pointer' : 'default',
+                '&:hover': stats.duplicates > 0 ? {
+                  transform: 'scale(1.02)',
+                  transition: 'transform 0.2s'
+                } : {}
+              }}
+              onClick={() => stats.duplicates > 0 && setOpenDuplicatesDialog(true)}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <WarningIcon color="warning" />
+                  <Typography variant="h6" sx={{ ml: 1 }}>
+                    Duplikate
                   </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    size="small"
-                    onClick={() => {
-                      handleOpen(item);
-                      setOpenBreachedDialog(false);
-                    }}
-                  >
-                    Passwort ändern
-                  </Button>
+                <Typography variant="h4" color="warning.main">
+                  {stats.duplicates}
+                </Typography>
+                {stats.duplicates > 0 && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                    Klicken für Details
+                  </Typography>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Gesamt"
+              value={stats.total}
+              icon={<SecurityIcon color="primary" />}
+              color="primary"
+              tooltip="Gesamtzahl der gespeicherten Passwörter"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Ø Länge"
+              value={stats.averageLength}
+              icon={<InfoIcon color="info" />}
+              color="info"
+              tooltip="Durchschnittliche Passwortlänge"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card 
+              sx={{ 
+                height: '100%', 
+                cursor: breachedPasswords.length > 0 || checkingBreaches ? 'pointer' : 'default',
+                '&:hover': (breachedPasswords.length > 0 || checkingBreaches) ? {
+                  transform: 'scale(1.02)',
+                  transition: 'transform 0.2s'
+                } : {}
+              }}
+              onClick={() => breachedPasswords.length > 0 && setOpenBreachedDialog(true)}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <SecurityIcon color={checkingBreaches ? 'info' : breachedPasswords.length > 0 ? 'error' : 'success'} />
+                  <Typography variant="h6" sx={{ ml: 1 }}>
+                    Sicherheit
+                  </Typography>
                 </Box>
+                <Typography 
+                  variant="h4" 
+                  color={checkingBreaches ? 'info.main' : breachedPasswords.length > 0 ? 'error.main' : 'success.main'}
+                >
+                  {checkingBreaches ? (
+                    'Prüfe...'
+                  ) : breachedPasswords.length > 0 ? (
+                    breachedPasswords.length
+                  ) : (
+                    'Sicher'
+                  )}
+                </Typography>
+                {!checkingBreaches && (
+                  <Button 
+                    size="small" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      checkForBreaches();
+                    }}
+                    sx={{ mt: 1 }}
+                  >
+                    Erneut prüfen
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        <Paper sx={{ p: 3 }}>
+          <Typography variant="h6" sx={{ mb: 3 }}>
+            Passwort-Stärke Verteilung
+          </Typography>
+          <StrengthBar
+            label="Sehr stark"
+            value={stats.strength.veryStrong}
+            total={stats.total}
+            color="success"
+          />
+          <StrengthBar
+            label="Stark"
+            value={stats.strength.strong}
+            total={stats.total}
+            color="info"
+          />
+          <StrengthBar
+            label="Mittel"
+            value={stats.strength.medium}
+            total={stats.total}
+            color="warning"
+          />
+          <StrengthBar
+            label="Schwach"
+            value={stats.strength.weak}
+            total={stats.total}
+            color="error"
+          />
+          <StrengthBar
+            label="Sehr schwach"
+            value={stats.strength.veryWeak}
+            total={stats.total}
+            color="error"
+          />
+        </Paper>
+
+        {/* Dialog für Duplikate */}
+        <Dialog
+          open={openDuplicatesDialog}
+          onClose={() => setOpenDuplicatesDialog(false)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <WarningIcon color="warning" sx={{ mr: 1 }} />
+              Gefundene Duplikate
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            {duplicateGroups.map((group, index) => (
+              <Box key={index} sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" color="warning.main" sx={{ mb: 1 }}>
+                  Gruppe {index + 1} ({group.length} Einträge)
+                </Typography>
+                <Paper variant="outlined" sx={{ p: 2 }}>
+                  {group.map((item, i) => (
+                    <Box 
+                      key={i} 
+                      sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        mb: i < group.length - 1 ? 1 : 0,
+                        pb: i < group.length - 1 ? 1 : 0,
+                        borderBottom: i < group.length - 1 ? '1px solid' : 'none',
+                        borderColor: 'divider'
+                      }}
+                    >
+                      <Box>
+                        <Typography variant="body1">{item.title}</Typography>
+                        {item.url && (
+                          <Typography variant="caption" color="text.secondary">
+                            {item.url}
+                          </Typography>
+                        )}
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Tooltip title="Passwort kopieren">
+                          <IconButton 
+                            size="small"
+                            onClick={() => {
+                              navigator.clipboard.writeText(item.password);
+                              showSnackbarMessage('Passwort wurde kopiert', 'success');
+                            }}
+                          >
+                            <ContentCopyIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </Box>
+                  ))}
+                </Paper>
               </Box>
-            </Paper>
-          ))}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenBreachedDialog(false)}>
-            Schließen
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+            ))}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenDuplicatesDialog(false)}>
+              Schließen
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Dialog für kompromittierte Passwörter */}
+        <Dialog
+          open={openBreachedDialog}
+          onClose={() => setOpenBreachedDialog(false)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <SecurityIcon color="error" sx={{ mr: 1 }} />
+              Kompromittierte Passwörter
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            <Typography variant="body1" sx={{ mb: 3 }}>
+              Die folgenden Passwörter wurden in Datenlecks gefunden und sollten geändert werden:
+            </Typography>
+            {breachedPasswords.map((item, index) => (
+              <Paper key={index} variant="outlined" sx={{ p: 2, mb: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <Box>
+                    <Typography variant="h6">{item.title}</Typography>
+                    {item.url && (
+                      <Typography variant="body2" color="text.secondary">
+                        {item.url}
+                      </Typography>
+                    )}
+                    <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+                      In {item.breachCount.toLocaleString()} Datenlecks gefunden
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      size="small"
+                      onClick={() => {
+                        setSelectedPassword(item);
+                        setOpenBreachedDialog(false);
+                      }}
+                    >
+                      Passwort ändern
+                    </Button>
+                  </Box>
+                </Box>
+              </Paper>
+            ))}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenBreachedDialog(false)}>
+              Schließen
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={6000} 
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
 

@@ -72,6 +72,24 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchPasswords();
+
+    // Listen for new password dialog event
+    const handleNewPasswordDialog = () => {
+      handleOpen();
+    };
+
+    // Listen for stats toggle event
+    const handleStatsToggle = () => {
+      setShowStats(prev => !prev);
+    };
+
+    window.addEventListener('openNewPasswordDialog', handleNewPasswordDialog);
+    window.addEventListener('toggleStats', handleStatsToggle);
+
+    return () => {
+      window.removeEventListener('openNewPasswordDialog', handleNewPasswordDialog);
+      window.removeEventListener('toggleStats', handleStatsToggle);
+    };
   }, []);
 
   useEffect(() => {
@@ -319,51 +337,31 @@ export default function Dashboard() {
 
   return (
     <Box>
-      <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Typography variant="h4" component="h1" sx={{ flexGrow: 1 }}>
-          Passwörter
-        </Typography>
-        <Button
-          variant="outlined"
-          onClick={() => setShowStats(!showStats)}
-          startIcon={<AssessmentIcon />}
-          sx={{ mr: 1 }}
-        >
-          {showStats ? 'Passwörter anzeigen' : 'Statistiken anzeigen'}
-        </Button>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpen()}
-          sx={{ minWidth: 200 }}
-        >
-          Neues Passwort
-        </Button>
+      <Box sx={{ mb: 3 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs>
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="Passwörter durchsuchen..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: 'background.paper',
+                },
+              }}
+            />
+          </Grid>
+        </Grid>
       </Box>
-
-      {/* Suche und Filter */}
-      {!showStats && (
-        <TextField
-          fullWidth
-          placeholder="Passwörter durchsuchen..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon color="action" />
-              </InputAdornment>
-            ),
-          }}
-          sx={{
-            maxWidth: 400,
-            '& .MuiOutlinedInput-root': {
-              backgroundColor: 'background.paper',
-            },
-            mb: 4
-          }}
-        />
-      )}
 
       {showStats ? (
         <Stats 

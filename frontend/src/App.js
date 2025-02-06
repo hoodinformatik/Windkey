@@ -1,38 +1,41 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import Layout from './components/Layout';
+import Vault from './components/Vault';
+import Tools from './components/Tools';
+import Stats from './components/Stats'; // Import Stats component
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
-const theme = createTheme({
+const createAppTheme = (darkMode) => createTheme({
   palette: {
-    mode: 'dark',
+    mode: darkMode ? 'dark' : 'light',
     primary: {
-      main: '#1d9bf0',
-      light: '#1d9bf0',
-      dark: '#1884cc',
+      main: '#175DDC',
+      light: '#2C6FE5',
+      dark: '#1252C9',
+    },
+    secondary: {
+      main: '#175DDC',
     },
     background: {
-      default: '#15202b',
-      paper: '#1e2732',
+      default: darkMode ? '#1F242E' : '#FFFFFF',
+      paper: darkMode ? '#2F343D' : '#FFFFFF',
+      alternate: darkMode ? '#292D37' : '#FBFBFB',
     },
     text: {
-      primary: '#ffffff',
-      secondary: '#8899a6',
+      primary: darkMode ? '#FFFFFF' : '#1F242E',
+      secondary: darkMode ? '#BEC5D0' : '#4C525F',
     },
     error: {
-      main: '#ff4444',
-      dark: 'rgba(255, 68, 68, 0.16)',
+      main: '#FF3E3E',
     },
-    divider: '#38444d',
-    action: {
-      hover: 'rgba(29, 155, 240, 0.1)',
-      selected: 'rgba(29, 155, 240, 0.16)',
-    },
+    divider: darkMode ? '#363B45' : '#E8E8E8',
   },
   typography: {
     fontFamily: [
@@ -40,69 +43,53 @@ const theme = createTheme({
       'BlinkMacSystemFont',
       'Segoe UI',
       'Roboto',
+      'Oxygen',
+      'Ubuntu',
+      'Cantarell',
       'Helvetica Neue',
-      'Arial',
       'sans-serif',
     ].join(','),
     h1: {
-      fontWeight: 700,
+      fontWeight: 600,
+      fontSize: '1.75rem',
     },
     h2: {
-      fontWeight: 700,
-    },
-    h3: {
-      fontWeight: 700,
-    },
-    h4: {
-      fontWeight: 700,
-    },
-    h5: {
       fontWeight: 600,
+      fontSize: '1.5rem',
     },
     h6: {
       fontWeight: 600,
+      fontSize: '1rem',
+    },
+    subtitle1: {
+      fontSize: '0.9375rem',
     },
     button: {
       textTransform: 'none',
-      fontWeight: 600,
+      fontWeight: 500,
     },
   },
   shape: {
-    borderRadius: 12,
+    borderRadius: 3,
   },
   components: {
-    MuiCssBaseline: {
+    MuiAppBar: {
       styleOverrides: {
-        body: {
-          scrollbarColor: "#38444d #1e2732",
-          "&::-webkit-scrollbar, & *::-webkit-scrollbar": {
-            backgroundColor: "#1e2732",
-            width: 8,
-          },
-          "&::-webkit-scrollbar-thumb, & *::-webkit-scrollbar-thumb": {
-            borderRadius: 8,
-            backgroundColor: "#38444d",
-            border: "2px solid #1e2732",
-          },
-          "&::-webkit-scrollbar-thumb:focus, & *::-webkit-scrollbar-thumb:focus": {
-            backgroundColor: "#536471",
-          },
-          "&::-webkit-scrollbar-thumb:active, & *::-webkit-scrollbar-thumb:active": {
-            backgroundColor: "#536471",
-          },
-          "&::-webkit-scrollbar-thumb:hover, & *::-webkit-scrollbar-thumb:hover": {
-            backgroundColor: "#536471",
-          },
+        root: {
+          backgroundColor: darkMode ? '#2F343D' : '#FFFFFF',
+          borderBottom: `1px solid ${darkMode ? '#363B45' : '#E8E8E8'}`,
         },
       },
     },
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 20,
+          borderRadius: 3,
           textTransform: 'none',
-          fontWeight: 600,
-          padding: '8px 20px',
+          fontWeight: 500,
+          fontSize: '0.9375rem',
+          padding: '6px 16px',
+          minHeight: 36,
         },
         contained: {
           boxShadow: 'none',
@@ -111,49 +98,18 @@ const theme = createTheme({
           },
         },
         outlined: {
-          borderColor: '#38444d',
+          borderColor: darkMode ? '#363B45' : '#E8E8E8',
           '&:hover': {
-            borderColor: '#1d9bf0',
-            backgroundColor: 'rgba(29, 155, 240, 0.1)',
+            borderColor: '#175DDC',
+            backgroundColor: 'rgba(23, 93, 220, 0.04)',
           },
         },
       },
     },
-    MuiTextField: {
+    MuiIconButton: {
       styleOverrides: {
         root: {
-          '& .MuiOutlinedInput-root': {
-            borderRadius: 8,
-            backgroundColor: '#1e2732',
-            '& fieldset': {
-              borderColor: '#38444d',
-              transition: 'border-color 0.2s',
-            },
-            '&:hover fieldset': {
-              borderColor: '#1d9bf0',
-            },
-            '&.Mui-focused fieldset': {
-              borderColor: '#1d9bf0',
-            },
-          },
-          '& .MuiInputLabel-root': {
-            color: '#8899a6',
-          },
-          '& .MuiInputAdornment-root': {
-            color: '#8899a6',
-          },
-        },
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          backgroundImage: 'none',
-          backgroundColor: '#1e2732',
-          borderColor: '#38444d',
-          '&:hover': {
-            borderColor: '#1d9bf0',
-          },
+          borderRadius: 3,
         },
       },
     },
@@ -161,63 +117,73 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundImage: 'none',
+          boxShadow: darkMode 
+            ? '0 2px 8px rgba(0, 0, 0, 0.35)' 
+            : '0 2px 8px rgba(0, 0, 0, 0.15)',
         },
       },
     },
-    MuiDialog: {
+    MuiMenu: {
       styleOverrides: {
         paper: {
-          backgroundImage: 'none',
-          backgroundColor: '#1e2732',
-          boxShadow: '0 8px 16px rgba(0, 0, 0, 0.25)',
+          borderRadius: 3,
         },
       },
     },
-    MuiIconButton: {
+    MuiMenuItem: {
       styleOverrides: {
         root: {
-          '&:hover': {
-            backgroundColor: 'rgba(29, 155, 240, 0.1)',
-          },
+          minHeight: 40,
+          fontSize: '0.9375rem',
         },
       },
     },
   },
 });
 
-function PrivateRoute({ children }) {
+function PrivateRoute() {
   const { isAuthenticated, loading } = useAuth();
   
   if (loading) {
-    return null; // oder eine Loading-Komponente
+    return null; // or a Loading component
   }
   
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" />;
 }
 
-function App() {
+function ThemedApp() {
+  const { darkMode } = useTheme();
+  const theme = createAppTheme(darkMode);
+
   return (
-    <Router>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
+    <MuiThemeProvider theme={theme}>
+      <CssBaseline />
+      <Router>
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route
-              path="/"
-              element={
-                <PrivateRoute>
-                  <Layout>
-                    <Dashboard />
-                  </Layout>
-                </PrivateRoute>
-              }
-            />
+            <Route path="/" element={<PrivateRoute />}>
+              <Route element={<Layout />}>
+                <Route index element={<Navigate to="/dashboard" />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="vault" element={<Vault />} />
+                <Route path="tools" element={<Tools />} />
+                <Route path="stats" element={<Stats />} />
+              </Route>
+            </Route>
           </Routes>
         </AuthProvider>
-      </ThemeProvider>
-    </Router>
+      </Router>
+    </MuiThemeProvider>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <ThemedApp />
+    </ThemeProvider>
   );
 }
 
