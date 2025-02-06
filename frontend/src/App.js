@@ -9,6 +9,7 @@ import Layout from './components/Layout';
 import Vault from './components/Vault';
 import Tools from './components/Tools';
 import Stats from './components/Stats';
+import History from './components/History';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
@@ -238,6 +239,7 @@ function ThemedApp() {
                 <Route path="vault" element={<Vault />} />
                 <Route path="tools" element={<Tools />} />
                 <Route path="stats" element={<Stats />} />
+                <Route path="history" element={<History />} />
               </Route>
             </Route>
           </Routes>

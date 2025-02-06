@@ -1,7 +1,6 @@
 from flask import jsonify, request, send_file
 from flask_login import login_user, login_required, logout_user, current_user
-from app import app, db, User, Password
-from crypto import cipher_suite
+from app import app, db, User, Password, History
 import pyotp
 import secrets
 import string
@@ -112,6 +111,10 @@ def login():
     
     print("Login successful")  # Debug log
     login_user(user)
+    
+    # Log the successful login
+    log_user_action('login', f'User logged in: {user.email}')
+    
     return jsonify({
         'message': 'Login successful',
         'user': {
@@ -125,9 +128,12 @@ def login():
 def logout():
     if request.method == 'OPTIONS':
         return '', 200
-        
+    
+    # Log the logout action before the user is logged out
+    log_user_action('logout', f'User logged out: {current_user.email}')
+    
     logout_user()
-    return jsonify({'message': 'Logout successful'})
+    return jsonify({'message': 'Logged out successfully'})
 
 @app.route('/api/passwords', methods=['GET', 'OPTIONS'])
 @login_required
@@ -175,6 +181,9 @@ def create_password():
         db.session.add(password)
         db.session.commit()
         
+        # Log password creation
+        log_user_action('create_password', f'Created password entry: {data["title"]}')
+        
         return jsonify({
             'id': password.id,
             'title': password.title,
@@ -212,6 +221,10 @@ def update_password(id):
         password.notes = data['notes']
     
     db.session.commit()
+    
+    # Log password update
+    log_user_action('update_password', f'Updated password entry: {password.title}')
+    
     return jsonify({'message': 'Password updated successfully'})
 
 @app.route('/api/passwords/<int:id>', methods=['GET', 'OPTIONS'])
@@ -248,6 +261,9 @@ def delete_password(id):
     
     if password.user_id != current_user.id:
         return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Log password deletion before deleting
+    log_user_action('delete_password', f'Deleted password entry: {password.title}')
     
     db.session.delete(password)
     db.session.commit()
@@ -343,3 +359,30 @@ def check_password_breach():
     except Exception as e:
         print(f"Error in check_password_breach: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/history', methods=['GET', 'OPTIONS'])
+@login_required
+def get_history():
+    if request.method == 'OPTIONS':
+        return '', 200
+        
+    try:
+        history_entries = History.query.filter_by(user_id=current_user.id).order_by(History.timestamp.desc()).all()
+        return jsonify([entry.to_dict() for entry in history_entries])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Helper function to log user actions
+def log_user_action(action, details=None):
+    try:
+        history_entry = History(
+            user_id=current_user.id,
+            action=action,
+            details=details,
+            ip_address=request.remote_addr
+        )
+        db.session.add(history_entry)
+        db.session.commit()
+    except Exception as e:
+        print(f"Failed to log action: {str(e)}")
+        db.session.rollback()

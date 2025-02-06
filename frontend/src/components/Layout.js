@@ -41,6 +41,7 @@ import {
   VisibilityOff,
   Refresh as RefreshIcon,
   ContentCopy as ContentCopyIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -330,6 +331,23 @@ export default function Layout() {
               }}
             >
               Statistiken
+            </Button>
+            <Button
+              component={Link}
+              to="/history"
+              variant="text"
+              color="inherit"
+              startIcon={<HistoryIcon />}
+              sx={{
+                color: location.pathname === '/history' ? 'primary.main' : 'text.secondary',
+                minWidth: 'auto',
+                px: 1.5,
+                '&:hover': {
+                  color: 'text.primary',
+                },
+              }}
+            >
+              Verlauf
             </Button>
           </Box>
 

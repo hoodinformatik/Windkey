@@ -35,6 +35,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(128))
     two_factor_secret = db.Column(db.String(32))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    history = db.relationship('History', backref='user', lazy=True)
     
     def set_password(self, password):
         from werkzeug.security import generate_password_hash
@@ -72,6 +73,23 @@ class Password(db.Model):
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class History(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    action = db.Column(db.String(255), nullable=False)
+    details = db.Column(db.String(255))
+    ip_address = db.Column(db.String(45))
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'action': self.action,
+            'details': self.details,
+            'ip_address': self.ip_address,
+            'timestamp': self.timestamp.isoformat()
+        }
 
 @login_manager.user_loader
 def load_user(user_id):
