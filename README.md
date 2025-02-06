@@ -41,9 +41,8 @@ Ein moderner, sicherer Passwort-Manager mit Fokus auf Benutzerfreundlichkeit und
 
 ## Installation
 
-### Backend (Python/Flask)
+### Python/Flask
 ```bash
-cd backend
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
