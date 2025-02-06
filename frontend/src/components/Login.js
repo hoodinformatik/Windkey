@@ -53,17 +53,25 @@ export default function Login() {
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: 'background.default',
+        p: 3,
       }}
     >
       <Container maxWidth="sm">
         <Paper
-          elevation={0}
+          elevation={1}
           sx={{
-            p: 4,
-            borderRadius: 3,
+            p: { xs: 3, sm: 4 },
+            borderRadius: 4,
             backgroundColor: 'background.paper',
-            border: '1px solid',
-            borderColor: 'divider',
+            backdropFilter: 'blur(20px)',
+            transition: 'all 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? '0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2)'
+                  : '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            },
           }}
         >
           <Box sx={{ mb: 4, textAlign: 'center' }}>
@@ -72,6 +80,17 @@ export default function Login() {
                 fontSize: 48, 
                 color: 'primary.main',
                 mb: 2,
+                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                '@keyframes pulse': {
+                  '0%, 100%': {
+                    opacity: 1,
+                    transform: 'scale(1)',
+                  },
+                  '50%': {
+                    opacity: 0.8,
+                    transform: 'scale(1.05)',
+                  },
+                },
               }} 
             />
             <Typography
@@ -81,6 +100,7 @@ export default function Login() {
                 fontWeight: 700,
                 color: 'text.primary',
                 mb: 1,
+                letterSpacing: '-0.02em',
               }}
             >
               Willkommen zurück
@@ -89,6 +109,8 @@ export default function Login() {
               variant="body1"
               sx={{
                 color: 'text.secondary',
+                maxWidth: '80%',
+                mx: 'auto',
               }}
             >
               Melden Sie sich an, um auf Ihre sicheren Passwörter zuzugreifen
@@ -96,7 +118,16 @@ export default function Login() {
           </Box>
 
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert 
+              severity="error" 
+              sx={{ 
+                mb: 3,
+                borderRadius: 2,
+                '& .MuiAlert-icon': {
+                  fontSize: '1.5rem',
+                },
+              }}
+            >
               {error}
             </Alert>
           )}
@@ -118,7 +149,7 @@ export default function Login() {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <MailIcon color="action" />
+                    <MailIcon color="action" sx={{ fontSize: '1.25rem' }} />
                   </InputAdornment>
                 ),
               }}
@@ -126,12 +157,13 @@ export default function Login() {
                 mb: 2,
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: 'background.paper',
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'primary.main',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: (theme) =>
+                      theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.05)'
+                        : 'rgba(0, 0, 0, 0.02)',
                   },
-                },
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'divider',
                 },
               }}
             />
@@ -151,7 +183,7 @@ export default function Login() {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <LockIcon color="action" />
+                    <LockIcon color="action" sx={{ fontSize: '1.25rem' }} />
                   </InputAdornment>
                 ),
                 endAdornment: (
@@ -159,7 +191,16 @@ export default function Login() {
                     <IconButton
                       onClick={() => setShowPassword(!showPassword)}
                       edge="end"
-                      sx={{ color: 'text.secondary' }}
+                      sx={{ 
+                        color: 'text.secondary',
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': {
+                          backgroundColor: (theme) =>
+                            theme.palette.mode === 'dark'
+                              ? 'rgba(255, 255, 255, 0.05)'
+                              : 'rgba(0, 0, 0, 0.02)',
+                        },
+                      }}
                     >
                       {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                     </IconButton>
@@ -170,12 +211,13 @@ export default function Login() {
                 mb: 2,
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: 'background.paper',
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'primary.main',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: (theme) =>
+                      theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.05)'
+                        : 'rgba(0, 0, 0, 0.02)',
                   },
-                },
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'divider',
                 },
               }}
             />
@@ -194,7 +236,7 @@ export default function Login() {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <KeyIcon color="action" />
+                    <KeyIcon color="action" sx={{ fontSize: '1.25rem' }} />
                   </InputAdornment>
                 ),
               }}
@@ -202,12 +244,13 @@ export default function Login() {
                 mb: 3,
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: 'background.paper',
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'primary.main',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: (theme) =>
+                      theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.05)'
+                        : 'rgba(0, 0, 0, 0.02)',
                   },
-                },
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'divider',
                 },
               }}
             />
@@ -222,10 +265,14 @@ export default function Login() {
                 py: 1.5,
                 fontSize: '1rem',
                 fontWeight: 600,
-                textTransform: 'none',
-                backgroundColor: 'primary.main',
+                boxShadow: 'none',
+                transition: 'all 0.2s ease-in-out',
                 '&:hover': {
-                  backgroundColor: 'primary.dark',
+                  transform: 'translateY(-1px)',
+                  boxShadow: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? '0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.12)'
+                      : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                 },
               }}
             >
@@ -240,8 +287,11 @@ export default function Login() {
                 sx={{
                   color: 'primary.main',
                   textDecoration: 'none',
+                  fontWeight: 500,
+                  transition: 'all 0.2s ease-in-out',
                   '&:hover': {
-                    textDecoration: 'underline',
+                    color: 'primary.dark',
+                    textDecoration: 'none',
                   },
                 }}
               >

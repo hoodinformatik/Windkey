@@ -8,7 +8,7 @@ import Dashboard from './components/Dashboard';
 import Layout from './components/Layout';
 import Vault from './components/Vault';
 import Tools from './components/Tools';
-import Stats from './components/Stats'; // Import Stats component
+import Stats from './components/Stats';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
@@ -16,29 +16,39 @@ const createAppTheme = (darkMode) => createTheme({
   palette: {
     mode: darkMode ? 'dark' : 'light',
     primary: {
-      main: '#175DDC',
-      light: '#2C6FE5',
-      dark: '#1252C9',
+      main: '#2563EB',
+      light: '#3B82F6',
+      dark: '#1D4ED8',
     },
     secondary: {
-      main: '#175DDC',
+      main: '#2563EB',
     },
     background: {
-      default: darkMode ? '#1F242E' : '#FFFFFF',
-      paper: darkMode ? '#2F343D' : '#FFFFFF',
-      alternate: darkMode ? '#292D37' : '#FBFBFB',
+      default: darkMode ? '#111827' : '#F9FAFB',
+      paper: darkMode ? '#1F2937' : '#FFFFFF',
+      alternate: darkMode ? '#374151' : '#F3F4F6',
     },
     text: {
-      primary: darkMode ? '#FFFFFF' : '#1F242E',
-      secondary: darkMode ? '#BEC5D0' : '#4C525F',
+      primary: darkMode ? '#F9FAFB' : '#111827',
+      secondary: darkMode ? '#D1D5DB' : '#4B5563',
     },
     error: {
-      main: '#FF3E3E',
+      main: '#EF4444',
     },
-    divider: darkMode ? '#363B45' : '#E8E8E8',
+    warning: {
+      main: '#F59E0B',
+    },
+    info: {
+      main: '#3B82F6',
+    },
+    success: {
+      main: '#10B981',
+    },
+    divider: darkMode ? '#374151' : '#E5E7EB',
   },
   typography: {
     fontFamily: [
+      'Inter',
       '-apple-system',
       'BlinkMacSystemFont',
       'Segoe UI',
@@ -50,91 +60,149 @@ const createAppTheme = (darkMode) => createTheme({
       'sans-serif',
     ].join(','),
     h1: {
-      fontWeight: 600,
-      fontSize: '1.75rem',
+      fontWeight: 700,
+      fontSize: '1.875rem',
+      lineHeight: 1.2,
     },
     h2: {
-      fontWeight: 600,
+      fontWeight: 700,
       fontSize: '1.5rem',
+      lineHeight: 1.3,
     },
     h6: {
       fontWeight: 600,
-      fontSize: '1rem',
+      fontSize: '1.125rem',
+      lineHeight: 1.4,
     },
     subtitle1: {
-      fontSize: '0.9375rem',
+      fontSize: '1rem',
+      lineHeight: 1.5,
     },
     button: {
       textTransform: 'none',
       fontWeight: 500,
+      fontSize: '0.875rem',
     },
   },
   shape: {
-    borderRadius: 3,
+    borderRadius: 12,
   },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          scrollbarWidth: 'thin',
+          '&::-webkit-scrollbar': {
+            width: '6px',
+            height: '6px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: darkMode ? '#1F2937' : '#F3F4F6',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: darkMode ? '#4B5563' : '#9CA3AF',
+            borderRadius: '3px',
+          },
+        },
+      },
+    },
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: darkMode ? '#2F343D' : '#FFFFFF',
-          borderBottom: `1px solid ${darkMode ? '#363B45' : '#E8E8E8'}`,
+          backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
+          borderBottom: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
+          boxShadow: 'none',
         },
       },
     },
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 3,
+          borderRadius: '8px',
           textTransform: 'none',
           fontWeight: 500,
-          fontSize: '0.9375rem',
-          padding: '6px 16px',
-          minHeight: 36,
+          fontSize: '0.875rem',
+          padding: '8px 16px',
+          minHeight: 40,
+          transition: 'all 0.2s ease-in-out',
         },
         contained: {
           boxShadow: 'none',
           '&:hover': {
-            boxShadow: 'none',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            transform: 'translateY(-1px)',
           },
         },
         outlined: {
-          borderColor: darkMode ? '#363B45' : '#E8E8E8',
+          borderColor: darkMode ? '#374151' : '#E5E7EB',
           '&:hover': {
-            borderColor: '#175DDC',
-            backgroundColor: 'rgba(23, 93, 220, 0.04)',
+            borderColor: darkMode ? '#4B5563' : '#D1D5DB',
+            backgroundColor: darkMode ? 'rgba(75, 85, 99, 0.1)' : 'rgba(229, 231, 235, 0.4)',
           },
-        },
-      },
-    },
-    MuiIconButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 3,
         },
       },
     },
     MuiPaper: {
       styleOverrides: {
         root: {
-          backgroundImage: 'none',
-          boxShadow: darkMode 
-            ? '0 2px 8px rgba(0, 0, 0, 0.35)' 
-            : '0 2px 8px rgba(0, 0, 0, 0.15)',
+          borderRadius: '16px',
+          transition: 'all 0.2s ease-in-out',
+          '&:hover': {
+            boxShadow: darkMode 
+              ? '0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.12)'
+              : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+          },
+        },
+        elevation1: {
+          boxShadow: darkMode
+            ? '0 1px 3px 0 rgba(0, 0, 0, 0.2), 0 1px 2px 0 rgba(0, 0, 0, 0.12)'
+            : '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
         },
       },
     },
-    MuiMenu: {
-      styleOverrides: {
-        paper: {
-          borderRadius: 3,
-        },
-      },
-    },
-    MuiMenuItem: {
+    MuiTextField: {
       styleOverrides: {
         root: {
-          minHeight: 40,
-          fontSize: '0.9375rem',
+          '& .MuiOutlinedInput-root': {
+            borderRadius: '10px',
+            transition: 'all 0.2s ease-in-out',
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: darkMode ? '#4B5563' : '#D1D5DB',
+            },
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderWidth: '2px',
+            },
+          },
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          borderRadius: '20px',
+          padding: '8px',
+        },
+      },
+    },
+    MuiAlert: {
+      styleOverrides: {
+        root: {
+          borderRadius: '10px',
+        },
+      },
+    },
+    MuiLinearProgress: {
+      styleOverrides: {
+        root: {
+          borderRadius: '6px',
+          height: '8px',
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: '8px',
         },
       },
     },
@@ -145,7 +213,7 @@ function PrivateRoute() {
   const { isAuthenticated, loading } = useAuth();
   
   if (loading) {
-    return null; // or a Loading component
+    return null;
   }
   
   return isAuthenticated ? <Outlet /> : <Navigate to="/login" />;
