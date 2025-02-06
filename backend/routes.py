@@ -1,6 +1,6 @@
 from flask import jsonify, request, send_file
 from flask_login import login_user, login_required, logout_user, current_user
-from app import app, db, User, Password, History
+from app import app, db, User, Password, History, Category
 import pyotp
 import secrets
 import string
@@ -149,6 +149,7 @@ def get_passwords():
             'password': cipher_suite.decrypt(p.encrypted_password).decode(),
             'url': p.url,
             'notes': p.notes,
+            'category_id': p.category_id,
             'created_at': p.created_at.isoformat(),
             'updated_at': p.updated_at.isoformat()
         } for p in passwords])
@@ -175,7 +176,8 @@ def create_password():
             title=data.get('title', 'Untitled'),
             encrypted_password=encrypted_password,
             url=data.get('url', ''),
-            notes=data.get('notes', '')
+            notes=data.get('notes', ''),
+            category_id=data.get('category_id')
         )
         
         db.session.add(password)
@@ -189,6 +191,7 @@ def create_password():
             'title': password.title,
             'url': password.url,
             'notes': password.notes,
+            'category_id': password.category_id,
             'created_at': password.created_at.isoformat(),
             'updated_at': password.updated_at.isoformat()
         }), 201
@@ -219,6 +222,8 @@ def update_password(id):
         password.url = data['url']
     if 'notes' in data:
         password.notes = data['notes']
+    if 'category_id' in data:
+        password.category_id = data['category_id']
     
     db.session.commit()
     
@@ -244,6 +249,7 @@ def get_password(id):
             'password': cipher_suite.decrypt(password.encrypted_password).decode(),
             'url': password.url,
             'notes': password.notes,
+            'category_id': password.category_id,
             'created_at': password.created_at.isoformat(),
             'updated_at': password.updated_at.isoformat()
         })
@@ -370,6 +376,110 @@ def get_history():
         history_entries = History.query.filter_by(user_id=current_user.id).order_by(History.timestamp.desc()).all()
         return jsonify([entry.to_dict() for entry in history_entries])
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Category endpoints
+@app.route('/api/categories', methods=['GET', 'OPTIONS'])
+@login_required
+def get_categories():
+    if request.method == 'OPTIONS':
+        return '', 200
+        
+    try:
+        categories = Category.query.filter_by(user_id=current_user.id).all()
+        return jsonify([category.to_dict() for category in categories])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/categories', methods=['POST', 'OPTIONS'])
+@login_required
+def create_category():
+    if request.method == 'OPTIONS':
+        return '', 200
+        
+    try:
+        data = request.get_json()
+        
+        if not data or 'name' not in data:
+            return jsonify({'error': 'Category name is required'}), 400
+            
+        category = Category(
+            user_id=current_user.id,
+            name=data['name'],
+            icon=data.get('icon', 'Folder'),  # Default icon
+            color=data.get('color', '#2563EB')  # Default color (primary blue)
+        )
+        
+        db.session.add(category)
+        db.session.commit()
+        
+        log_user_action('create_category', f'Created category: {category.name}')
+        
+        return jsonify(category.to_dict())
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/categories/<int:id>', methods=['PUT', 'OPTIONS'])
+@login_required
+def update_category(id):
+    if request.method == 'OPTIONS':
+        return '', 200
+        
+    try:
+        category = Category.query.get(id)
+        
+        if not category:
+            return jsonify({'error': 'Category not found'}), 404
+            
+        if category.user_id != current_user.id:
+            return jsonify({'error': 'Unauthorized'}), 403
+            
+        data = request.get_json()
+        
+        if 'name' in data:
+            category.name = data['name']
+        if 'icon' in data:
+            category.icon = data['icon']
+        if 'color' in data:
+            category.color = data['color']
+            
+        db.session.commit()
+        
+        log_user_action('update_category', f'Updated category: {category.name}')
+        
+        return jsonify(category.to_dict())
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/categories/<int:id>', methods=['DELETE', 'OPTIONS'])
+@login_required
+def delete_category(id):
+    if request.method == 'OPTIONS':
+        return '', 200
+        
+    try:
+        category = Category.query.get(id)
+        
+        if not category:
+            return jsonify({'error': 'Category not found'}), 404
+            
+        if category.user_id != current_user.id:
+            return jsonify({'error': 'Unauthorized'}), 403
+            
+        # Remove category_id from all passwords in this category
+        Password.query.filter_by(category_id=id).update({'category_id': None})
+        
+        category_name = category.name
+        db.session.delete(category)
+        db.session.commit()
+        
+        log_user_action('delete_category', f'Deleted category: {category_name}')
+        
+        return jsonify({'message': 'Category deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 # Helper function to log user actions

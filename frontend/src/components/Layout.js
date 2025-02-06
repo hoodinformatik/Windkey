@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import {
   AppBar,
@@ -28,6 +28,7 @@ import {
   FormControlLabel,
   Checkbox,
   Alert,
+  Select,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -54,11 +55,13 @@ export default function Layout() {
   const muiTheme = useMuiTheme();
   const [anchorEl, setAnchorEl] = useState(null);
   const [openNewPasswordDialog, setOpenNewPasswordDialog] = useState(false);
+  const [categories, setCategories] = useState([]);
   const [newPassword, setNewPassword] = useState({
     title: '',
     password: '',
     url: '',
     notes: '',
+    category_id: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -71,6 +74,19 @@ export default function Layout() {
     special: true,
   });
   const [showCopiedMessage, setShowCopiedMessage] = useState(false);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get('/api/categories');
+      setCategories(response.data);
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  };
 
   const calculatePasswordStrength = (password) => {
     if (!password) return { score: 0, label: 'Kein Passwort', color: 'error' };
@@ -173,6 +189,7 @@ export default function Layout() {
   const handleNewPasswordClick = () => {
     setOpenNewPasswordDialog(true);
     generatePassword(); // Generate a password immediately when opening the dialog
+    fetchCategories(); // Fetch latest categories when opening dialog
   };
 
   const handleNewPasswordClose = () => {
@@ -182,6 +199,7 @@ export default function Layout() {
       password: '',
       url: '',
       notes: '',
+      category_id: ''
     });
     setError('');
     setPasswordStrength({ score: 0, label: 'Kein Passwort', color: 'error' });
@@ -419,6 +437,25 @@ export default function Layout() {
               error={!newPassword.title}
               helperText={!newPassword.title ? 'Title is required' : ''}
             />
+
+            <FormControl fullWidth margin="normal">
+              <InputLabel id="category-label">Kategorie</InputLabel>
+              <Select
+                labelId="category-label"
+                value={newPassword.category_id}
+                onChange={(e) => setNewPassword(prev => ({ ...prev, category_id: e.target.value }))}
+                label="Kategorie"
+              >
+                <MenuItem value="">
+                  <em>Keine Kategorie</em>
+                </MenuItem>
+                {categories.map((category) => (
+                  <MenuItem key={category.id} value={category.id}>
+                    {category.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             
             <FormControl 
               fullWidth 

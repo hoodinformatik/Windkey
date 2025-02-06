@@ -36,6 +36,7 @@ class User(db.Model):
     two_factor_secret = db.Column(db.String(32))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     history = db.relationship('History', backref='user', lazy=True)
+    categories = db.relationship('Category', backref='user', lazy=True)
     
     def set_password(self, password):
         from werkzeug.security import generate_password_hash
@@ -64,15 +65,45 @@ class User(db.Model):
     def is_anonymous(self):
         return False
 
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    icon = db.Column(db.String(50))  # Material-UI icon name
+    color = db.Column(db.String(50))  # Color for the category
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    passwords = db.relationship('Password', backref='category', lazy=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'icon': self.icon,
+            'color': self.color,
+            'password_count': len(self.passwords)
+        }
+
 class Password(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
     title = db.Column(db.String(100), nullable=False)
     encrypted_password = db.Column(db.LargeBinary, nullable=False)
     url = db.Column(db.String(500))
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'url': self.url,
+            'notes': self.notes,
+            'category_id': self.category_id,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
 
 class History(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -96,7 +127,26 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 with app.app_context():
+    # Create tables
     db.create_all()
+    
+    # Check if category_id column exists in password table
+    inspector = db.inspect(db.engine)
+    columns = [c['name'] for c in inspector.get_columns('password')]
+    
+    if 'category_id' not in columns:
+        print("Adding category_id column to password table...")
+        try:
+            with db.engine.connect() as conn:
+                conn.execute(db.text("""
+                    ALTER TABLE password
+                    ADD COLUMN category_id INTEGER
+                    REFERENCES category(id)
+                """))
+                conn.commit()
+            print("Migration completed successfully!")
+        except Exception as e:
+            print(f"Error during migration: {str(e)}")
 
 from routes import *
 
