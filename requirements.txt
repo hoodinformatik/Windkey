@@ -14,3 +14,4 @@ requests==2.31.0
 gunicorn==21.2.0
 email-validator==2.1.0.post1
 python-jose==3.3.0
+qrcode==8.0
