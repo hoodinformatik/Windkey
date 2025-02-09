@@ -301,23 +301,6 @@ export default function Layout() {
             </Button>
             <Button
               component={Link}
-              to="/vault"
-              variant="text"
-              color="inherit"
-              startIcon={<FolderIcon />}
-              sx={{
-                color: location.pathname === '/vault' ? 'primary.main' : 'text.secondary',
-                minWidth: 'auto',
-                px: 1.5,
-                '&:hover': {
-                  color: 'text.primary',
-                },
-              }}
-            >
-              Mein Tresor
-            </Button>
-            <Button
-              component={Link}
               to="/tools"
               variant="text"
               color="inherit"

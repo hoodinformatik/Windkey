@@ -6,7 +6,6 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import Layout from './components/Layout';
-import Vault from './components/Vault';
 import Tools from './components/Tools';
 import Stats from './components/Stats';
 import History from './components/History';
@@ -236,7 +235,6 @@ function ThemedApp() {
               <Route element={<Layout />}>
                 <Route index element={<Navigate to="/dashboard" />} />
                 <Route path="dashboard" element={<Dashboard />} />
-                <Route path="vault" element={<Vault />} />
                 <Route path="tools" element={<Tools />} />
                 <Route path="stats" element={<Stats />} />
                 <Route path="history" element={<History />} />
