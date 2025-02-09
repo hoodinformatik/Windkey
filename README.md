@@ -41,11 +41,12 @@ Ein moderner, sicherer Passwort-Manager mit Fokus auf Benutzerfreundlichkeit und
 
 ## Installation
 
-### Python/Flask
+### Backend (Python/Flask)
 ```bash
-python -m venv venv
+python -m venv venv #Python3: python3 -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+cd backend
 python app.py
 ```
 
