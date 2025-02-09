@@ -1,4 +1,4 @@
-from flask import jsonify, request, send_file
+from flask import jsonify, request, send_file, session
 from flask_login import login_user, login_required, logout_user, current_user
 from app import app, db, User, Password, History, Category
 import pyotp
@@ -101,27 +101,41 @@ def login():
     if not user or not user.check_password(data['password']):
         return jsonify({'error': 'Invalid credentials'}), 401
     
+    # If 2FA code is not provided, return a temporary token
+    if 'two_factor_code' not in data:
+        temp_token = secrets.token_urlsafe(32)
+        # Store the temporary token in the session
+        session['temp_token'] = temp_token
+        session['temp_user_id'] = user.id
+        return jsonify({
+            'requires2FA': True,
+            'temporaryToken': temp_token
+        }), 200
+    
+    # Verify 2FA code
     totp = pyotp.TOTP(user.two_factor_secret)
-    provided_code = data['two_factor_code']
-    print("2FA verification - Secret:", user.two_factor_secret)  # Debug log
-    print("2FA verification - Provided code:", provided_code)  # Debug log
-    if not totp.verify(provided_code, valid_window=1):
+    if not totp.verify(data['two_factor_code'], valid_window=1):
         print("2FA verification failed")  # Debug log
         return jsonify({'error': 'Invalid 2FA code'}), 401
     
     print("Login successful")  # Debug log
     login_user(user)
     
+    # Generate a new session token
+    token = secrets.token_urlsafe(32)
+    session['user_id'] = user.id
+    session['token'] = token
+    
     # Log the successful login
     log_user_action('login', f'User logged in: {user.email}')
     
     return jsonify({
-        'message': 'Login successful',
+        'token': token,
         'user': {
             'id': user.id,
             'email': user.email
         }
-    })
+    }), 200
 
 @app.route('/api/logout', methods=['POST', 'OPTIONS'])
 @login_required
@@ -377,6 +391,52 @@ def get_history():
         return jsonify([entry.to_dict() for entry in history_entries])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/verify-2fa', methods=['POST', 'OPTIONS'])
+def verify_2fa():
+    if request.method == 'OPTIONS':
+        return '', 200
+        
+    data = request.get_json()
+    
+    # Verify the temporary token
+    if 'temporaryToken' not in data or data['temporaryToken'] != session.get('temp_token'):
+        return jsonify({'error': 'Invalid session'}), 401
+    
+    # Get the user from the temporary session
+    user_id = session.get('temp_user_id')
+    if not user_id:
+        return jsonify({'error': 'Invalid session'}), 401
+        
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 401
+    
+    # Verify 2FA code
+    totp = pyotp.TOTP(user.two_factor_secret)
+    if not totp.verify(data['code'], valid_window=1):
+        return jsonify({'error': 'Invalid 2FA code'}), 401
+    
+    # Clear temporary session data
+    session.pop('temp_token', None)
+    session.pop('temp_user_id', None)
+    
+    # Generate a new session token
+    token = secrets.token_urlsafe(32)
+    session['user_id'] = user.id
+    session['token'] = token
+    
+    # Log the user in
+    login_user(user)
+    log_user_action('login', f'User completed 2FA: {user.email}')
+    
+    return jsonify({
+        'token': token,
+        'user': {
+            'id': user.id,
+            'email': user.email
+        }
+    }), 200
 
 # Category endpoints
 @app.route('/api/categories', methods=['GET', 'OPTIONS'])

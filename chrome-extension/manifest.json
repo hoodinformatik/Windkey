@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Windkey Password Manager",
+  "version": "1.0",
+  "description": "Secure password management for your browser",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs",
+    "notifications"
+  ],
+  "host_permissions": [
+    "http://localhost:5000/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

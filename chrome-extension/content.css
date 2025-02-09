@@ -1,0 +1,23 @@
+.windkey-highlight {
+  border: 2px solid #2196f3 !important;
+  box-shadow: 0 0 5px rgba(33, 150, 243, 0.5) !important;
+}
+
+.windkey-button {
+  position: absolute;
+  right: -40px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 999999;
+}
+
+.windkey-button:hover {
+  background-color: #1976d2;
+}

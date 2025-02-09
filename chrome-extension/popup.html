@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Windkey Password Manager</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">Windkey</div>
+    </header>
+
+    <!-- Login Form -->
+    <div id="login-form" class="form-section">
+      <div class="form-container">
+        <h2>Anmelden</h2>
+        <form id="login">
+          <div class="input-group">
+            <input type="email" id="email" placeholder="E-Mail" required>
+          </div>
+          <div class="input-group">
+            <input type="password" id="password" placeholder="Passwort" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Anmelden</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 2FA Form -->
+    <div id="twofa-form" class="form-section" style="display: none;">
+      <div class="form-container">
+        <h2>2FA Verifizierung</h2>
+        <p class="info-text">Bitte geben Sie den Code aus Ihrer Authenticator-App ein.</p>
+        <form id="twofa">
+          <div class="input-group code-input">
+            <input type="text" id="code" placeholder="000000" maxlength="6" pattern="[0-9]*" inputmode="numeric" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Bestätigen</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Password List -->
+    <div id="password-list" class="content-section" style="display: none;">
+      <div class="search-container">
+        <input type="text" id="search" placeholder="Suchen..." class="search-input">
+      </div>
+      
+      <div class="action-bar">
+        <button id="add-password" class="btn btn-primary">
+          <span class="btn-text">Neues Passwort</span>
+        </button>
+        <button id="sync" class="btn btn-secondary">
+          <span class="btn-text">Sync</span>
+        </button>
+      </div>
+
+      <div id="passwords-container" class="passwords-grid"></div>
+    </div>
+
+    <!-- Add Password Form -->
+    <div id="add-password-form" class="form-section" style="display: none;">
+      <div class="form-container">
+        <h2>Neues Passwort</h2>
+        <form id="new-password">
+          <div class="input-group">
+            <input type="text" id="title" placeholder="Titel" required>
+          </div>
+          <div class="input-group">
+            <input type="text" id="username" placeholder="Benutzername">
+          </div>
+          <div class="input-group password-group">
+            <input type="password" id="new-pass" placeholder="Passwort" required>
+            <div class="password-actions">
+              <button type="button" id="generate-password" class="btn btn-icon" title="Passwort generieren">
+                <span class="btn-text">Generieren</span>
+              </button>
+              <button type="button" id="toggle-password" class="btn btn-icon" title="Passwort anzeigen">
+                <span class="btn-text">Anzeigen</span>
+              </button>
+            </div>
+          </div>
+          <div class="input-group">
+            <input type="url" id="website" placeholder="Website URL">
+          </div>
+          <div class="input-group">
+            <textarea id="notes" placeholder="Notizen" rows="3"></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="button" id="cancel-add" class="btn btn-secondary">Abbrechen</button>
+            <button type="submit" class="btn btn-primary">Speichern</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
