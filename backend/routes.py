@@ -12,6 +12,7 @@ from io import BytesIO
 import base64
 import hashlib
 import requests
+from datetime import timedelta
 
 # Verschlüsselungshelfer
 ENCRYPTION_KEY_FILE = 'encryption.key'
@@ -121,10 +122,12 @@ def login():
     print("Login successful")  # Debug log
     login_user(user)
     
-    # Generate a new session token
+    # Generate a new session token and set long session
     token = secrets.token_urlsafe(32)
     session['user_id'] = user.id
     session['token'] = token
+    session.permanent = True
+    app.permanent_session_lifetime = timedelta(days=30)
     
     # Log the successful login
     log_user_action('login', f'User logged in: {user.email}')
@@ -429,6 +432,36 @@ def verify_2fa():
     # Log the user in
     login_user(user)
     log_user_action('login', f'User completed 2FA: {user.email}')
+    
+    return jsonify({
+        'token': token,
+        'user': {
+            'id': user.id,
+            'email': user.email
+        }
+    }), 200
+
+@app.route('/api/refresh-token', methods=['POST', 'OPTIONS'])
+def refresh_token():
+    if request.method == 'OPTIONS':
+        return '', 200
+        
+    # Check if user has a valid session
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'No valid session'}), 401
+        
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 401
+    
+    # Generate a new token
+    token = secrets.token_urlsafe(32)
+    session['token'] = token
+    
+    # Extend session lifetime
+    session.permanent = True
+    app.permanent_session_lifetime = timedelta(days=30)
     
     return jsonify({
         'token': token,

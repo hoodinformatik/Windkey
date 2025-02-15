@@ -15,14 +15,18 @@
     <div id="login-form" class="form-section">
       <div class="form-container">
         <h2>Anmelden</h2>
-        <form id="login">
-          <div class="input-group">
-            <input type="email" id="email" placeholder="E-Mail" required>
+        <form id="login" class="content-section" style="display: block;">
+          <div class="form-group">
+            <label for="email">E-Mail</label>
+            <input type="email" id="email" class="form-control" required>
           </div>
-          <div class="input-group">
-            <input type="password" id="password" placeholder="Passwort" required>
+          <div class="form-group">
+            <label for="password">Passwort</label>
+            <input type="password" id="password" class="form-control" required>
           </div>
-          <button type="submit" class="btn btn-primary">Anmelden</button>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Anmelden</button>
+          </div>
         </form>
       </div>
     </div>
@@ -32,17 +36,21 @@
       <div class="form-container">
         <h2>2FA Verifizierung</h2>
         <p class="info-text">Bitte geben Sie den Code aus Ihrer Authenticator-App ein.</p>
-        <form id="twofa">
-          <div class="input-group code-input">
-            <input type="text" id="code" placeholder="000000" maxlength="6" pattern="[0-9]*" inputmode="numeric" required>
+        <form id="twofa" class="content-section">
+          <div class="form-group">
+            <label for="2fa-code">2FA Code eingeben</label>
+            <input type="text" id="2fa-code" class="form-control" required pattern="[0-9]*" inputmode="numeric" maxlength="6">
           </div>
-          <button type="submit" class="btn btn-primary">Bestätigen</button>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Bestätigen</button>
+          </div>
         </form>
       </div>
     </div>
 
     <!-- Password List -->
     <div id="password-list" class="content-section" style="display: none;">
+      <div id="copy-feedback" class="copy-feedback">Kopiert!</div>
       <div class="search-container">
         <input type="text" id="search" placeholder="Suchen..." class="search-input">
       </div>
