@@ -127,9 +127,13 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 with app.app_context():
-    # Create tables
-    db.create_all()
-    
+    try:
+        # Create tables
+        db.create_all()
+        print("Database initialized successfully")
+    except Exception as e:
+        print(f"Error initializing database: {str(e)}")
+
     # Check if category_id column exists in password table
     inspector = db.inspect(db.engine)
     columns = [c['name'] for c in inspector.get_columns('password')]
@@ -151,4 +155,5 @@ with app.app_context():
 from routes import *
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.debug = True
+    app.run(host='0.0.0.0', port=5000)

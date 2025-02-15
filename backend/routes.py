@@ -62,24 +62,36 @@ def register():
         user = User()
         user.email = data['email']
         user.set_password(data['password'])
-        user.generate_2fa_secret()
+        
+        # Generate 2FA secret
+        try:
+            user.generate_2fa_secret()
+        except Exception as e:
+            return jsonify({'error': f'Failed to generate 2FA secret: {str(e)}'}), 500
         
         # Generate QR code
-        totp = pyotp.TOTP(user.two_factor_secret)
-        provisioning_uri = totp.provisioning_uri(user.email, issuer_name='Windkey')
+        try:
+            totp = pyotp.TOTP(user.two_factor_secret)
+            provisioning_uri = totp.provisioning_uri(user.email, issuer_name='Windkey')
+            
+            qr = qrcode.QRCode(version=1, box_size=10, border=5)
+            qr.add_data(provisioning_uri)
+            qr.make(fit=True)
+            
+            img_buffer = BytesIO()
+            img = qr.make_image(fill_color="black", back_color="white")
+            img.save(img_buffer, format='PNG')
+            img_buffer.seek(0)
+            img_str = base64.b64encode(img_buffer.getvalue()).decode()
+        except Exception as e:
+            return jsonify({'error': f'Failed to generate QR code: {str(e)}'}), 500
         
-        qr = qrcode.QRCode(version=1, box_size=10, border=5)
-        qr.add_data(provisioning_uri)
-        qr.make(fit=True)
-        
-        img_buffer = BytesIO()
-        img = qr.make_image(fill_color="black", back_color="white")
-        img.save(img_buffer, format='PNG')
-        img_buffer.seek(0)
-        img_str = base64.b64encode(img_buffer.getvalue()).decode()
-        
-        db.session.add(user)
-        db.session.commit()
+        try:
+            db.session.add(user)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': f'Failed to save user to database: {str(e)}'}), 500
         
         return jsonify({
             'message': 'Registration successful',
@@ -88,7 +100,7 @@ def register():
         })
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': 'Registration failed'}), 500
+        return jsonify({'error': f'Registration failed: {str(e)}'}), 500
 
 @app.route('/api/login', methods=['POST', 'OPTIONS'])
 def login():

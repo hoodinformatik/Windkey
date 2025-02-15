@@ -37,19 +37,13 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your settings
-```
-
-5. Initialize the database:
+4. Initialize the database:
 ```bash
 cd backend
 python migrate_db.py
 ```
 
-6. Start the backend server:
+5. Start the backend server:
 ```bash
 python app.py
 ```

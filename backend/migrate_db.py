@@ -1,5 +1,12 @@
-from app import db
+from app import db, app
 import os
+from sqlalchemy import inspect
+
+def column_exists(table_name, column_name):
+    with app.app_context():
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns(table_name)]
+        return column_name in columns
 
 def migrate_database():
     # Create a backup of the current database
@@ -10,17 +17,20 @@ def migrate_database():
                 dst.write(src.read())
 
     try:
-        # Add category_id column to password table
-        print("Adding category_id column to password table...")
-        with db.engine.connect() as conn:
-            conn.execute(db.text("""
-                ALTER TABLE password
-                ADD COLUMN category_id INTEGER
-                REFERENCES category(id)
-            """))
+        # Check if category_id column already exists
+        if not column_exists('password', 'category_id'):
+            print("Adding category_id column to password table...")
+            with app.app_context():
+                with db.engine.connect() as conn:
+                    conn.execute(db.text("""
+                        ALTER TABLE password
+                        ADD COLUMN category_id INTEGER
+                        REFERENCES category(id)
+                    """))
+                print("Migration completed successfully!")
+        else:
+            print("category_id column already exists in password table. Skipping migration.")
             
-        print("Migration completed successfully!")
-        
     except Exception as e:
         print(f"Error during migration: {str(e)}")
         # Restore backup if something went wrong
