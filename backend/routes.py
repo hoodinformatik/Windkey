@@ -587,6 +587,46 @@ def delete_category(id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/change-password', methods=['POST', 'OPTIONS'])
+@login_required
+def change_password():
+    if request.method == 'OPTIONS':
+        return '', 200
+        
+    try:
+        data = request.get_json()
+        
+        if not data or 'current_password' not in data or 'new_password' not in data:
+            return jsonify({'error': 'Current password and new password are required'}), 400
+            
+        current_password = data['current_password']
+        new_password = data['new_password']
+        
+        # Verify current password
+        if not current_user.check_password(current_password):
+            return jsonify({'error': 'Current password is incorrect'}), 401
+            
+        # Validate new password
+        if len(new_password) < 8:
+            return jsonify({'error': 'New password must be at least 8 characters long'}), 400
+            
+        # Check if new password is different from current password
+        if current_user.check_password(new_password):
+            return jsonify({'error': 'New password must be different from current password'}), 400
+            
+        # Update password
+        current_user.set_password(new_password)
+        db.session.commit()
+        
+        # Log the password change
+        log_user_action('change_password', 'User changed their password')
+        
+        return jsonify({'message': 'Password changed successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to change password: {str(e)}'}), 500
+
 # Helper function to log user actions
 def log_user_action(action, details=None):
     try:

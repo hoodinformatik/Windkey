@@ -55,6 +55,7 @@ export default function Layout() {
   const muiTheme = useMuiTheme();
   const [anchorEl, setAnchorEl] = useState(null);
   const [openNewPasswordDialog, setOpenNewPasswordDialog] = useState(false);
+  const [openChangePasswordDialog, setOpenChangePasswordDialog] = useState(false);
   const [categories, setCategories] = useState([]);
   const [newPassword, setNewPassword] = useState({
     title: '',
@@ -63,8 +64,20 @@ export default function Layout() {
     notes: '',
     category_id: ''
   });
+  const [changePasswordData, setChangePasswordData] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
+  });
   const [showPassword, setShowPassword] = useState(false);
+  const [showChangePasswords, setShowChangePasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false
+  });
   const [error, setError] = useState('');
+  const [changePasswordError, setChangePasswordError] = useState('');
+  const [changePasswordSuccess, setChangePasswordSuccess] = useState('');
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, label: 'Kein Passwort', color: 'error' });
   const [generatorSettings, setGeneratorSettings] = useState({
     length: 16,
@@ -233,6 +246,71 @@ export default function Layout() {
     }
   };
 
+  const handleChangePasswordClick = () => {
+    setOpenChangePasswordDialog(true);
+    setChangePasswordError('');
+    setChangePasswordSuccess('');
+    handleClose(); // Close the user menu
+  };
+
+  const handleChangePasswordClose = () => {
+    setOpenChangePasswordDialog(false);
+    setChangePasswordData({
+      current_password: '',
+      new_password: '',
+      confirm_password: ''
+    });
+    setChangePasswordError('');
+    setChangePasswordSuccess('');
+    setShowChangePasswords({
+      current: false,
+      new: false,
+      confirm: false
+    });
+  };
+
+  const handleChangePasswordSubmit = async () => {
+    try {
+      // Validate passwords match
+      if (changePasswordData.new_password !== changePasswordData.confirm_password) {
+        setChangePasswordError('New passwords do not match');
+        return;
+      }
+
+      // Validate password length
+      if (changePasswordData.new_password.length < 8) {
+        setChangePasswordError('New password must be at least 8 characters long');
+        return;
+      }
+
+      const response = await axios.post('/api/change-password', {
+        current_password: changePasswordData.current_password,
+        new_password: changePasswordData.new_password
+      });
+
+      setChangePasswordSuccess('Password changed successfully!');
+      setChangePasswordError('');
+      
+      // Close dialog after 2 seconds
+      setTimeout(() => {
+        handleChangePasswordClose();
+      }, 2000);
+      
+    } catch (error) {
+      setChangePasswordError(error.response?.data?.error || 'Failed to change password');
+      setChangePasswordSuccess('');
+    }
+  };
+
+  const handleChangePasswordInputChange = (event) => {
+    const { name, value } = event.target;
+    setChangePasswordData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    setChangePasswordError(''); // Clear error when user types
+  };
+
   const handleGeneratorSettingChange = (event) => {
     const { name, value, checked } = event.target;
     setGeneratorSettings(prev => {
@@ -387,8 +465,8 @@ export default function Layout() {
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
               onClose={handleClose}
-              onClick={handleClose}
             >
+              <MenuItem onClick={handleChangePasswordClick}>Change Password</MenuItem>
               <MenuItem onClick={handleLogout}>Logout</MenuItem>
             </Menu>
           </Box>
@@ -578,6 +656,121 @@ export default function Layout() {
           <Button onClick={handleNewPasswordClose}>Abbrechen</Button>
           <Button onClick={handleNewPasswordSubmit} variant="contained">
             Speichern
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog 
+        open={openChangePasswordDialog} 
+        onClose={handleChangePasswordClose}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Change Password</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+            {changePasswordError && (
+              <Alert severity="error" sx={{ mb: 1 }}>
+                {changePasswordError}
+              </Alert>
+            )}
+            {changePasswordSuccess && (
+              <Alert severity="success" sx={{ mb: 1 }}>
+                {changePasswordSuccess}
+              </Alert>
+            )}
+            
+            <FormControl fullWidth required>
+              <InputLabel htmlFor="current-password">Current Password</InputLabel>
+              <OutlinedInput
+                id="current-password"
+                name="current_password"
+                type={showChangePasswords.current ? 'text' : 'password'}
+                value={changePasswordData.current_password}
+                onChange={handleChangePasswordInputChange}
+                endAdornment={
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowChangePasswords(prev => ({
+                        ...prev,
+                        current: !prev.current
+                      }))}
+                      edge="end"
+                    >
+                      {showChangePasswords.current ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                }
+                label="Current Password"
+              />
+            </FormControl>
+
+            <FormControl fullWidth required>
+              <InputLabel htmlFor="new-password">New Password</InputLabel>
+              <OutlinedInput
+                id="new-password"
+                name="new_password"
+                type={showChangePasswords.new ? 'text' : 'password'}
+                value={changePasswordData.new_password}
+                onChange={handleChangePasswordInputChange}
+                endAdornment={
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowChangePasswords(prev => ({
+                        ...prev,
+                        new: !prev.new
+                      }))}
+                      edge="end"
+                    >
+                      {showChangePasswords.new ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                }
+                label="New Password"
+              />
+              <FormHelperText>Password must be at least 8 characters long</FormHelperText>
+            </FormControl>
+
+            <FormControl fullWidth required>
+              <InputLabel htmlFor="confirm-password">Confirm New Password</InputLabel>
+              <OutlinedInput
+                id="confirm-password"
+                name="confirm_password"
+                type={showChangePasswords.confirm ? 'text' : 'password'}
+                value={changePasswordData.confirm_password}
+                onChange={handleChangePasswordInputChange}
+                endAdornment={
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowChangePasswords(prev => ({
+                        ...prev,
+                        confirm: !prev.confirm
+                      }))}
+                      edge="end"
+                    >
+                      {showChangePasswords.confirm ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                }
+                label="Confirm New Password"
+              />
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleChangePasswordClose}>Cancel</Button>
+          <Button 
+            onClick={handleChangePasswordSubmit} 
+            variant="contained"
+            disabled={
+              !changePasswordData.current_password || 
+              !changePasswordData.new_password || 
+              !changePasswordData.confirm_password ||
+              changePasswordData.new_password !== changePasswordData.confirm_password
+            }
+          >
+            Change Password
           </Button>
         </DialogActions>
       </Dialog>
