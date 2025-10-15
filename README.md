@@ -1,4 +1,4 @@
-# Windkey Password Manager
+# Windkey Password Manager (not finished & vibe coded on stream, feel free to continue)
 
 A secure and modern password manager with 2FA support, built with Python Flask and React.
 
